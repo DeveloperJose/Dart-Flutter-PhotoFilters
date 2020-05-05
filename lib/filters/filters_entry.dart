@@ -11,7 +11,7 @@ import 'filters_dbworker.dart';
 import 'filter_model.dart';
 
 class FilterEntry extends StatelessWidget {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +104,7 @@ class FilterEntry extends StatelessWidget {
       steps.add(currentStep);
     });
     return FAStepper(
+      physics: ScrollPhysics(),
       currentStep: model.currentStep,
       type: FAStepperType.horizontal,
       titleIconArrange: FAStepperTitleIconArrange.column,
@@ -113,6 +114,7 @@ class FilterEntry extends StatelessWidget {
         if (model.currentStep == steps.length - 1)
           saveEntry(context, model);
         else if (model.currentStep <= steps.length) model.currentStep++;
+
       },
       onStepCancel: () {
         if (model.currentStep > 0) model.currentStep--;

@@ -51,7 +51,7 @@ class Filter {
     for (int i = 0; i < landmarkSplit.length; i++) {
       // String to Enum
       var landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
-      
+
       print('Parsed: $landmarkType from string ${landmarkSplit[i]}, ');
       double width = double.tryParse(widthSplit[i]);
       double height = double.tryParse(heightSplit[i]);

@@ -23,6 +23,7 @@ class FilterList extends StatelessWidget {
               onPressed: () async {
                 await selectImage(context, tempFilename);
                 model.imageML = await ImageML.fromFilename(tempFilename);
+                filtersModel.clear();
               },
             ),
           ),
@@ -69,8 +70,6 @@ class FilterList extends StatelessWidget {
     );
   }
 
-  void deleteFilter(BuildContext context, Filter filter) {}
-
   void editFilter(FilterModel model, Filter filter) async {
     if (filter.id != null)
       model.entityBeingEdited = await DBWorker.db.get(filter.id);
@@ -79,5 +78,43 @@ class FilterList extends StatelessWidget {
 
     model.landmarks = filter.landmarks;
     model.setStackIndex(1);
+  }
+
+  Future deleteFilter(BuildContext context, Filter filter) async {
+    return showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext alertContext) {
+          return AlertDialog(title: Text('Delete Filter'), content: Text('Really delete ${filter.name}?'), actions: [
+            FlatButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(alertContext).pop();
+              },
+            ),
+            FlatButton(
+              child: Text('Delete'),
+              onPressed: () async {
+                // Delete from DB
+                await DBWorker.db.delete(filter.id);
+
+                // Clear saved images
+                filter.landmarks.forEach((landmarkType, filterInfo) {
+                  var file = getAppFile(getLandmarkFilename(filter.name, landmarkType));
+                  if (file.existsSync()) file.deleteSync();
+                });
+
+                Navigator.of(alertContext).pop();
+                Scaffold.of(context).showSnackBar(SnackBar(
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 2),
+                  content: Text('Filter deleted'),
+                ));
+                filtersModel.loadData(DBWorker.db);
+                filtersModel.clear();
+              },
+            )
+          ]);
+        });
   }
 }
