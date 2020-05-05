@@ -56,7 +56,6 @@ class FilterEntry extends StatelessWidget {
     // If not, check if we had a previously saved landmark image from a previous filter
     if (landmarkImage == null) landmarkImage = getAppImage(getLandmarkFilename(model?.entityBeingEdited?.name, type));
 
-    print('Landmark Image: $landmarkImage, filename: ${getLandmarkFilename('temp', type)}');
     return CardSettings(shrinkWrap: true, children: [
       CardSettingsHeader(label: type.toString()),
       CardSettingsField(
@@ -127,6 +126,7 @@ class FilterEntry extends StatelessWidget {
   }
 
   void cancelEntry(BuildContext context, FilterModel model) {
+    model.clear();
     clearTemporaryFiles();
 
     FocusScope.of(context).requestFocus(FocusNode());
@@ -150,7 +150,6 @@ class FilterEntry extends StatelessWidget {
 
     // Update entity
     model.entityBeingEdited.landmarks = model.landmarks;
-    model.entityList.add(model.entityBeingEdited);
 
     // Update DB
     if (model.entityBeingEdited.id == null) {
@@ -161,10 +160,7 @@ class FilterEntry extends StatelessWidget {
     model.loadData(DBWorker.db);
 
     // Clear model
-    model.landmarks = {};
-    model.imageML = null;
-    model.currentStep = 0;
-    model.triggerRebuild();
+    model.clear();
 
     // Go back to list
     model.setStackIndex(0);

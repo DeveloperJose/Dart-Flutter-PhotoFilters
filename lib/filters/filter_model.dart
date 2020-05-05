@@ -1,4 +1,3 @@
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:photofilters/base_model.dart';
 import 'package:photofilters/image_utils.dart';
@@ -24,11 +23,16 @@ class Filter {
 
   @override
   String toString() {
-    return "Filter.toString(): $name";
+    return "Filter.toString(): ID=$id, Name=$name, Landmark Keys=${landmarks.keys.length}";
   }
 
   /// Database helper methods
-  get dbLandmarks => landmarks.keys.map((landmark) => landmark).join(',');
+  get dbLandmarks => landmarks.keys
+      .map((landmark) {
+        print('Reading: $landmark, ${landmarks.keys.toList()}');
+        return landmark.toString();
+      })
+      .join(',');
 
   get dbWidths => landmarks.values.map((filterInfo) => filterInfo.width).join(',');
 
@@ -45,7 +49,10 @@ class Filter {
     if (landmarkSplit.length == 0) return null;
 
     for (int i = 0; i < landmarkSplit.length; i++) {
-      FaceLandmarkType landmarkType = EnumToString.fromString(FaceLandmarkType.values, landmarkSplit[i]);
+      // String to Enum
+      var landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
+      
+      print('Parsed: $landmarkType from string ${landmarkSplit[i]}, ');
       double width = double.tryParse(widthSplit[i]);
       double height = double.tryParse(heightSplit[i]);
       var imageWrapper = await ImageWrapper.fromFilename(getLandmarkFilename(filterName, landmarkType));
@@ -81,6 +88,11 @@ class FilterModel extends BaseModel<Filter> {
   set imageML(value) {
     this._imageML = value;
     notifyListeners();
+  }
+
+  void clear() {
+    _currentStep = 0;
+    _landmarks = {};
   }
 
   void addLandmarkFilter(FaceLandmarkType landmarkType, ImageWrapper imageWrapper) {

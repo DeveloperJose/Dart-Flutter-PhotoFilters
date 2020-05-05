@@ -30,7 +30,7 @@ class SQFLiteDB extends DBWorker {
   SQFLiteDB._();
 
   /// Loads grocery information from a database map
-  Future<Filter> _fromMap(Map<String, dynamic> map) async => await Filter.fromDatabase(map[KEY_ID], map[KEY_FILTER_NAME], map[KEY_LANDMARKS], map[KEY_WIDTHS], map[KEY_HEIGHTS]);
+  Future<Filter> _fromMap(Map<String, dynamic> map) async => Filter.fromDatabase(map[KEY_ID], map[KEY_FILTER_NAME], map[KEY_LANDMARKS], map[KEY_WIDTHS], map[KEY_HEIGHTS]);
 
   /// Converts grocery information into a mappable format
   Map<String, dynamic> _toMap(Filter filter) => Map<String, dynamic>()
@@ -68,6 +68,7 @@ class SQFLiteDB extends DBWorker {
   @override
   Future<int> create(Filter filter) async {
     Database db = await database;
+    print('db_create(): ${filter.name}, ${filter.dbLandmarks}, ${filter.dbWidths}, ${filter.dbHeights}');
     return await db.rawInsert(
         "INSERT INTO $TBL_NAME ($KEY_FILTER_NAME, $KEY_LANDMARKS, $KEY_WIDTHS, $KEY_HEIGHTS) "
         "VALUES (?, ?, ?, ?)",
@@ -84,6 +85,7 @@ class SQFLiteDB extends DBWorker {
   Future<Filter> get(int id) async {
     Database db = await database;
     var values = await db.query(TBL_NAME, where: "$KEY_ID = ?", whereArgs: [id]);
+    print('db_get(): $values');
     return values.isEmpty ? null : _fromMap(values.first);
   }
 
@@ -91,7 +93,8 @@ class SQFLiteDB extends DBWorker {
   Future<List<Filter>> getAll() async {
     Database db = await database;
     var values = await db.query(TBL_NAME);
-    return values.isNotEmpty ? values.map((m) => _fromMap(m)).toList() : [];
+    print('db_getAll(): $values');
+    return values.isNotEmpty ? Future.wait(values.map((m) => _fromMap(m)).toList()) : [];
   }
 
   @override
