@@ -19,7 +19,7 @@ Image getAppImage(String filename) {
 }
 
 // Landmark IO
-String getLandmarkFilename(String filterName, FaceLandmarkType type) => (filterName + '-' + type.toString());
+String getLandmarkFilename(String filterName, FaceLandmarkType type) => ((filterName ?? '') + '-' + type.toString());
 
 
 /// Wrapper for supporting both dart:ui Images and flutter Image widgets

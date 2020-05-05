@@ -38,7 +38,7 @@ class FilterEntry extends StatelessWidget {
         CardSettingsText(
             hintText: 'Enter a name for your filter here',
             label: 'Name',
-            initialValue: model.entityBeingEdited.name ?? '',
+            initialValue: model?.entityBeingEdited?.name ?? '',
             validator: (value) {
               if (value == null || value.isEmpty) return 'Please type a filter name';
               return null;
@@ -49,7 +49,12 @@ class FilterEntry extends StatelessWidget {
   }
 
   Widget _buildLandmarkStep(BuildContext context, FilterModel model, FaceLandmarkType type) {
+    // Check if we have a temporary landmark image saved
     Image landmarkImage = getAppImage(getLandmarkFilename('temp', type));
+
+    // If not, check if we had a previously saved landmark image from a previous filter
+    if (landmarkImage == null) landmarkImage = getAppImage(getLandmarkFilename(model?.entityBeingEdited?.name, type));
+
     print('Landmark Image: $landmarkImage, filename: ${getLandmarkFilename('temp', type)}');
     return CardSettings(shrinkWrap: true, children: [
       CardSettingsHeader(label: type.toString()),
@@ -114,7 +119,7 @@ class FilterEntry extends StatelessWidget {
       },
       controlsBuilder: (buildContext, {onStepContinue, onStepCancel}) => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
         FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
-        FlatButton(child: Text('Previous'), onPressed: onStepCancel),
+        FlatButton(child:  Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
         RaisedButton(child: (model.currentStep == steps.length - 1) ? Text('Finish and Save') : Text('Next'), onPressed: onStepContinue)
       ]),
     );

@@ -45,8 +45,8 @@ class FacePainter extends CustomPainter {
             canvas: canvas,
             rect: Rect.fromCenter(
               center: landmark.position,
-              width: filterInfo.width,
-              height: filterInfo.height,
+              width: filterInfo.width ?? 0,
+              height: filterInfo.height ?? 0,
             ),
             image: filterInfo.imageWrapper.dartImage,
             fit: BoxFit.fill,

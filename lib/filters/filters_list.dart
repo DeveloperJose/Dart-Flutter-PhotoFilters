@@ -1,26 +1,13 @@
-import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:photofilters/image_utils.dart';
+import 'package:photofilters/ml_utils.dart';
 import 'package:scoped_model/scoped_model.dart';
 
-
-import 'package:photofilters/ml_utils.dart';
 import 'filter_model.dart';
 
 class FilterList extends StatelessWidget {
   final String tempFilename = 'temp_photo';
-
-  Widget buildFloatingActionButton(FilterModel model) => FloatingActionButton(
-      child: Icon(Icons.add),
-      onPressed: () async {
-        // Delete temp file
-        model.entityBeingEdited = Filter();
-        model.setStackIndex(1);
-      });
-
-  Widget buildSlideable(BuildContext context, FilterModel model, Filter filter) {
-    return Card(elevation: 8, child: Text(filter.name));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,24 +21,52 @@ class FilterList extends StatelessWidget {
               color: Colors.blue,
               onPressed: () async {
                 await selectImage(context, tempFilename);
-                model.addImageML(await ImageML.fromFilename(tempFilename));
+                model.imageML = await ImageML.fromFilename(tempFilename);
               },
             ),
           ),
-          (model.imageML != null)
-              ? model.imageML.getWidget(model)
-              : Text('ML stuff will go here'),
+          (model.imageML != null) ? model.imageML.getWidget(model) : Text('Image not loaded yet!'),
           (model.entityList.length == 0)
               ? Text('No filters added yet!')
               : Expanded(
-                  child: GridView.builder(
+                  child: ListView.builder(
+                  scrollDirection: Axis.vertical,
                   physics: ScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
                   itemCount: model.entityList.length,
-                  itemBuilder: (BuildContext context, int index) => buildSlideable(context, model, model.entityList[index]),
+                  itemBuilder: (BuildContext context, int index) => buildSlidable(context, model, model.entityList[index]),
                 ))
         ]),
       );
     });
+  }
+
+  Widget buildFloatingActionButton(FilterModel model) => FloatingActionButton(
+      child: Icon(Icons.add),
+      onPressed: () async {
+        editFilter(model, Filter());
+      });
+
+  Widget buildSlidable(BuildContext context, FilterModel model, Filter filter) {
+    return Slidable(
+      child: GestureDetector(
+        child: Card(child: Container(padding: EdgeInsets.all(20), child: Center(child: Text('Filter Name: ${filter.name}')))),
+        onTap: () => model.landmarks = filter.landmarks,
+      ),
+      actionPane: SlidableDrawerActionPane(),
+      actionExtentRatio: 0.2,
+      secondaryActions: [
+        IconSlideAction(caption: "Delete", color: Colors.red, icon: Icons.delete, onTap: () => deleteFilter(context, filter)),
+        IconSlideAction(caption: 'Edit', color: Colors.blue, icon: Icons.edit, onTap: () => editFilter(model, filter))
+      ],
+    );
+  }
+
+  void deleteFilter(BuildContext context, Filter filter) {}
+
+  void editFilter(FilterModel model, Filter filter) {
+    model.entityBeingEdited = filter;
+    model.landmarks = filter.landmarks;
+    model.currentStep = 0;
+    model.setStackIndex(1);
   }
 }

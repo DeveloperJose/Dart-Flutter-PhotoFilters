@@ -31,24 +31,30 @@ class Filter {
 
 class FilterModel extends BaseModel<Filter> {
   int _currentStep = 0;
-  ImageML imageML;
-  Map<FaceLandmarkType, FilterInfo> landmarks = {};
+  ImageML _imageML;
+  Map<FaceLandmarkType, FilterInfo> _landmarks = {};
 
   get currentStep => _currentStep;
-
   set currentStep(value) {
     _currentStep = value;
+    notifyListeners();
+  }
+
+  get landmarks => _landmarks;
+  set landmarks(value) {
+    this._landmarks = value;
+    notifyListeners();
+  }
+
+  get imageML => _imageML;
+  set imageML(value) {
+    this._imageML = value;
     notifyListeners();
   }
 
   void addLandmarkFilter(FaceLandmarkType type, ImageWrapper image)
   {
     landmarks[type] = FilterInfo(image);
-    notifyListeners();
-  }
-
-  void addImageML(ImageML im) {
-    imageML = im;
     notifyListeners();
   }
 }
