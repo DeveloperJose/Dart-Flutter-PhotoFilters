@@ -1,10 +1,12 @@
+import 'dart:ui';
+
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 
 import 'filters/filter_model.dart';
 import 'image_utils.dart';
 
-FaceDetector getFaceDetector() => FirebaseVision.instance.faceDetector(FaceDetectorOptions(enableClassification: false, enableLandmarks: true, enableTracking: true, mode: FaceDetectorMode.fast));
+FaceDetector getFaceDetector() => FirebaseVision.instance.faceDetector(FaceDetectorOptions(enableClassification: false, enableLandmarks: true, enableTracking: true, mode: FaceDetectorMode.fast, enableContours: true));
 
 class ImageML {
   ImageWrapper imageWrapper;
@@ -30,13 +32,19 @@ class FacePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) async {
     canvas.drawImage(model.imageML.imageWrapper.dartImage, Offset.zero, Paint());
 
-    model.imageML.faces.forEach((face) {
+    model.imageML.faces.forEach((Face face) {
       canvas.drawRect(
           face.boundingBox,
           Paint()
             ..color = Colors.teal
             ..strokeWidth = 6
             ..style = PaintingStyle.stroke);
+
+      var faceCont = face.getContour(FaceContourType.face);
+      if (faceCont != null){
+        canvas.drawPoints(PointMode.points, faceCont.positionsList, Paint()..strokeWidth = 3..color = Colors.white);
+        print('Face Contours: ${faceCont.positionsList.length}');
+      }
 
       model.landmarks.forEach((landmarkType, filterInfo) {
         var landmark = face.getLandmark(landmarkType);
