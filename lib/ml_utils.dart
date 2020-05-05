@@ -50,6 +50,7 @@ class FacePainter extends CustomPainter {
             ),
             image: filterInfo.imageWrapper.dartImage,
             fit: BoxFit.fill,
+            filterQuality: FilterQuality.high,
           );
         }
       });
