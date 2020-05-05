@@ -4,6 +4,7 @@ import 'package:photofilters/image_utils.dart';
 import 'package:photofilters/ml_utils.dart';
 import 'package:scoped_model/scoped_model.dart';
 
+import 'filters_dbworker.dart';
 import 'filter_model.dart';
 
 class FilterList extends StatelessWidget {
@@ -63,10 +64,9 @@ class FilterList extends StatelessWidget {
 
   void deleteFilter(BuildContext context, Filter filter) {}
 
-  void editFilter(FilterModel model, Filter filter) {
-    model.entityBeingEdited = filter;
+  void editFilter(FilterModel model, Filter filter) async {
+    model.entityBeingEdited = await DBWorker.db.get(filter.id);
     model.landmarks = filter.landmarks;
-    model.currentStep = 0;
     model.setStackIndex(1);
   }
 }

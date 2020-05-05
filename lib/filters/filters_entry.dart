@@ -7,6 +7,7 @@ import 'package:photofilters/filters/filter_model.dart';
 import 'package:photofilters/image_utils.dart';
 import 'package:scoped_model/scoped_model.dart';
 
+import 'filters_dbworker.dart';
 import 'filter_model.dart';
 
 class FilterEntry extends StatelessWidget {
@@ -132,7 +133,8 @@ class FilterEntry extends StatelessWidget {
     model.setStackIndex(0);
   }
 
-  void saveEntry(BuildContext context, FilterModel model) {
+  void saveEntry(BuildContext context, FilterModel model) async {
+    // Save files and remove temps
     int count = 0;
     FaceLandmarkType.values.forEach((landmarkType) {
       var tempFile = getAppFile(getLandmarkFilename('temp', landmarkType));
@@ -145,9 +147,26 @@ class FilterEntry extends StatelessWidget {
 
     clearTemporaryFiles();
     print('Saved $count landmarks from the entity being edited under the name ${model.entityBeingEdited.name}');
+
+    // Update entity
     model.entityBeingEdited.landmarks = model.landmarks;
     model.entityList.add(model.entityBeingEdited);
+
+    // Update DB
+    if (model.entityBeingEdited.id == null) {
+      await DBWorker.db.create(model.entityBeingEdited);
+    } else {
+      await DBWorker.db.update(model.entityBeingEdited);
+    }
+    model.loadData(DBWorker.db);
+
+    // Clear model
+    model.landmarks = {};
+    model.imageML = null;
+    model.currentStep = 0;
     model.triggerRebuild();
+
+    // Go back to list
     model.setStackIndex(0);
     Scaffold.of(context).showSnackBar(SnackBar(backgroundColor: Colors.green, duration: Duration(seconds: 2), content: Text('Filter saved!')));
   }
