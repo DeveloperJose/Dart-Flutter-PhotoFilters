@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photofilters/filters/filter_model.dart';
 import 'package:photofilters/image_utils.dart';
+import 'package:photofilters/ml_utils.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 import 'filters_dbworker.dart';
@@ -22,8 +23,8 @@ class FilterEntry extends StatelessWidget {
         }));
   }
 
-  Widget _buildPreview(FilterModel model) => (model.imageML != null && model.currentStep >= 1)
-      ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [model.imageML.getWidget(model), _buildRefreshPreviewFAB(model)])
+  Widget _buildPreview(FilterModel model) => (model.currentStep >= 1)
+      ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [ImageML.getPreviewWidget(model), _buildRefreshPreviewFAB(model)])
       : Container();
 
   FloatingActionButton _buildRefreshPreviewFAB(FilterModel model) => FloatingActionButton(child: Icon(Icons.refresh), onPressed: () => model.triggerRebuild());
@@ -51,10 +52,11 @@ class FilterEntry extends StatelessWidget {
 
   Widget _buildLandmarkStep(BuildContext context, FilterModel model, FaceLandmarkType type) {
     // Check if we have a temporary landmark image saved
-    Image landmarkImage = getAppImage(getLandmarkFilename('temp', type));
+    String landmarkFilename = getLandmarkFilename('temp', type);
+    Image landmarkImage = getAppFlutterImage(landmarkFilename);
 
     // If not, check if we had a previously saved landmark image from a previous filter
-    if (landmarkImage == null) landmarkImage = getAppImage(getLandmarkFilename(model?.entityBeingEdited?.name, type));
+    if (landmarkImage == null) landmarkImage = getAppFlutterImage(getLandmarkFilename(model?.entityBeingEdited?.name, type));
 
     return CardSettings(shrinkWrap: true, children: [
       CardSettingsHeader(label: type.toString()),
@@ -66,8 +68,8 @@ class FilterEntry extends StatelessWidget {
           trailing: IconButton(
               icon: Icon(Icons.photo_library),
               onPressed: () async {
-                await selectImage(context, getLandmarkFilename('temp', type));
-                model.addLandmarkFilter(type, await ImageWrapper.fromFilename(getLandmarkFilename('temp', type)));
+                await selectImage(context, landmarkFilename);
+                model.addLandmarkFilter(type, landmarkFilename);
               }),
         ),
       ),

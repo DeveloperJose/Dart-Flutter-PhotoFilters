@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:photofilters/image_utils.dart';
@@ -6,13 +7,15 @@ import 'package:scoped_model/scoped_model.dart';
 
 import 'filter_model.dart';
 import 'filters_dbworker.dart';
+import 'package:photofilters/camera_utils.dart';
 
 class FilterList extends StatelessWidget {
   final String tempFilename = 'temp_photo';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {;
     return ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
+      print('FiltersModel: ${filtersModel.imageML}, Model ML ${model.imageML}');
       return Scaffold(
         floatingActionButton: buildFloatingActionButton(model),
         body: Column(children: [
@@ -27,9 +30,9 @@ class FilterList extends StatelessWidget {
               },
             ),
           ),
-          (model.imageML != null) ? model.imageML.getWidget(model) : Text('Image not loaded yet!'),
+          ImageML.getPreviewWidget(model),
           (model.entityList.length == 0)
-              ? Text('No filters added yet!')
+              ? Center(child: Text('No filters added yet!'))
               : (model.imageML != null)
                   ? Expanded(
                       child: ListView.builder(

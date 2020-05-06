@@ -6,14 +6,11 @@ import 'package:photofilters/ml_utils.dart';
 FilterModel filtersModel = FilterModel();
 
 class FilterInfo {
-  ImageWrapper imageWrapper;
+  String imageFilename;
   double width;
   double height;
 
-  FilterInfo(this.imageWrapper) {
-    width = imageWrapper.width;
-    height = imageWrapper.height;
-  }
+  FilterInfo(this.imageFilename, this.width, this.height);
 }
 
 class Filter {
@@ -27,16 +24,16 @@ class Filter {
   }
 
   /// Database helper methods
-  get dbLandmarks => landmarks.keys
+  String get dbLandmarks => landmarks.keys
       .map((landmark) {
         print('Reading: $landmark, ${landmarks.keys.toList()}');
         return landmark.toString();
       })
       .join(',');
 
-  get dbWidths => landmarks.values.map((filterInfo) => filterInfo.width).join(',');
+  String get dbWidths => landmarks.values.map((filterInfo) => filterInfo.width).join(',');
 
-  get dbHeights => landmarks.values.map((filterInfo) => filterInfo.height).join(',');
+  String get dbHeights => landmarks.values.map((filterInfo) => filterInfo.height).join(',');
 
   static Future<Filter> fromDatabase(int id, String filterName, String landmarkStr, String widthStr, String heightStr) async {
     var result = Filter()
@@ -52,13 +49,11 @@ class Filter {
       // String to Enum
       var landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
 
-      print('Parsed: $landmarkType from string ${landmarkSplit[i]}, ');
+      var filename = getLandmarkFilename(filterName, landmarkType);
       double width = double.tryParse(widthSplit[i]);
       double height = double.tryParse(heightSplit[i]);
-      var imageWrapper = await ImageWrapper.fromFilename(getLandmarkFilename(filterName, landmarkType));
-      result.landmarks[landmarkType] = FilterInfo(imageWrapper)
-        ..width = width
-        ..height = height;
+
+      result.landmarks[landmarkType] = FilterInfo(filename, width, height);
     }
     return result;
   }
@@ -69,34 +64,33 @@ class FilterModel extends BaseModel<Filter> {
   ImageML _imageML;
   Map<FaceLandmarkType, FilterInfo> _landmarks = {};
 
-  get currentStep => _currentStep;
 
-  set currentStep(value) {
+  int get currentStep => _currentStep;
+  ImageML get imageML => _imageML;
+  Map<FaceLandmarkType, FilterInfo> get landmarks => _landmarks;
+
+  set currentStep(int value) {
     _currentStep = value;
     notifyListeners();
   }
 
-  get landmarks => _landmarks;
-
-  set landmarks(value) {
-    this._landmarks = value;
+  set imageML(ImageML value) {
+    this._imageML = value;
     notifyListeners();
   }
 
-  get imageML => _imageML;
-
-  set imageML(value) {
-    this._imageML = value;
+  set landmarks(Map<FaceLandmarkType, FilterInfo> value) {
+    this._landmarks = value;
     notifyListeners();
   }
 
   void clear() {
     _currentStep = 0;
-    _landmarks = {};
+    _landmarks.clear();
   }
 
-  void addLandmarkFilter(FaceLandmarkType landmarkType, ImageWrapper imageWrapper) {
-    landmarks[landmarkType] = FilterInfo(imageWrapper);
+  void addLandmarkFilter(FaceLandmarkType landmarkType, String filename) {
+    landmarks[landmarkType] = FilterInfo(filename, 20, 20);
     notifyListeners();
   }
 }

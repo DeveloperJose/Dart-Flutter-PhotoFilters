@@ -1,6 +1,8 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
 
+import 'package:photofilters/camera_utils.dart';
 import 'filter_model.dart';
 import 'filters_dbworker.dart';
 import 'filters_entry.dart';
@@ -13,6 +15,7 @@ class Filters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return ScopedModel<FilterModel>(
         model: filtersModel,
         child: ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {

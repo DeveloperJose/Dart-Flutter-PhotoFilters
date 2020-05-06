@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId "edu.utep.cs.cs5381.jperez50.photofilters"
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 28
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

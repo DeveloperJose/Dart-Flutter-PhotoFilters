@@ -6,56 +6,31 @@ import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'package:image/image.dart' as im_lib;
+
+import 'package:camera/camera.dart';
 
 Directory mDocsDir;
 
 // General File IO
 String getInternalFilename(String filename) => join(mDocsDir.path, filename);
 File getAppFile(String filename) => File(getInternalFilename(filename));
-Image getAppImage(String filename) {
+Image getAppFlutterImage(String filename) {
   File file = getAppFile(filename);
   if (!file.existsSync()) return null;
   return Image.memory(file.readAsBytesSync());
 }
 
+Future<ui.Image> getAppDartImage(String filename) async {
+  File file = getAppFile(filename);
+  if (!file.existsSync()) return null;
+  return await decodeImageFromList(file.readAsBytesSync());
+}
+
+FirebaseVisionImage getAppFirebaseImage(String filename) => FirebaseVisionImage.fromFile(getAppFile(filename));
+
 // Landmark IO
 String getLandmarkFilename(String filterName, FaceLandmarkType type) => ((filterName ?? '') + '-' + type.toString());
-
-
-/// Wrapper for supporting both dart:ui Images and flutter Image widgets
-class ImageWrapper {
-  String internalFilename;
-  File file;
-  Uint8List fileBytes;
-
-  Image flutterImage;
-  ui.Image dartImage;
-
-  ImageWrapper._(String filename) {
-    internalFilename = getInternalFilename(filename);
-    file = getAppFile(filename);
-
-    if (file.existsSync()) {
-      fileBytes = file.readAsBytesSync();
-      flutterImage = Image.memory(fileBytes);
-
-    }
-  }
-
-  static Future<ImageWrapper> fromFilename(String filename) async {
-    var wrapper = ImageWrapper._(filename);
-    if (wrapper.file.existsSync()) {
-      wrapper.dartImage = await decodeImageFromList(wrapper.fileBytes);
-    }
-    return wrapper;
-  }
-
-  get isValid => file?.existsSync();
-
-  get width => dartImage?.width?.toDouble();
-
-  get height => dartImage?.height?.toDouble();
-}
 
 /// Allows you to select if you want to take a picture with your camera or get it from your gallery
 Future selectImage(BuildContext context, String filename) {
