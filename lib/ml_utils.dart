@@ -38,17 +38,6 @@ class ImageML {
   }
 
   static Widget getPreviewWidget(FilterModel model) {
-    return FutureBuilder<Widget>(
-        future: _getPreviewWidget(model),
-        builder: (buildContext, snapshot) {
-          if (snapshot.hasData)
-            return snapshot.data;
-          else if (snapshot.hasError) return Text('Error while making preview widget: ${snapshot.error}');
-          return CircularProgressIndicator();
-        });
-  }
-
-  static Future<Widget> _getPreviewWidget(FilterModel model) async {
     // Check if we can even display something
     if (model.imageML == null)
       return Text('[Image preview will go here]');
