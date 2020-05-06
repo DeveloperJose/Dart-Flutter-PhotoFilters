@@ -69,7 +69,8 @@ class FilterEntry extends StatelessWidget {
               icon: Icon(Icons.photo_library),
               onPressed: () async {
                 await selectImage(context, landmarkFilename);
-                model.addLandmarkFilter(type, landmarkFilename);
+                FilterInfo filterInfo = await FilterInfo.fromFilename(landmarkFilename);
+                model.addLandmarkFilter(type, filterInfo);
               }),
         ),
       ),

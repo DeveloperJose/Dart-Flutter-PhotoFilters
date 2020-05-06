@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:photofilters/base_model.dart';
 import 'package:photofilters/image_utils.dart';
@@ -7,10 +9,23 @@ FilterModel filtersModel = FilterModel();
 
 class FilterInfo {
   String imageFilename;
+  ui.Image dartImage;
+
   double width;
   double height;
 
-  FilterInfo(this.imageFilename, this.width, this.height);
+  FilterInfo(this.imageFilename, this.dartImage, this.width, this.height);
+
+  FilterInfo.fromDartImage(this.imageFilename, this.dartImage) {
+    width = dartImage.width.toDouble();
+    height = dartImage.height.toDouble();
+  }
+
+  static Future<FilterInfo> fromFilename(String filename) async {
+    ui.Image dartImage = await getAppDartImage(filename);
+    if (dartImage == null) return null;
+    return FilterInfo.fromDartImage(filename, dartImage);
+  }
 }
 
 class Filter {
@@ -18,27 +33,22 @@ class Filter {
   String name;
   Map<FaceLandmarkType, FilterInfo> landmarks = {};
 
+  Filter([this.id, this.name, this.landmarks = const {}]);
+
   @override
   String toString() {
     return "Filter.toString(): ID=$id, Name=$name, Landmark Keys=${landmarks.keys.length}";
   }
 
   /// Database helper methods
-  String get dbLandmarks => landmarks.keys
-      .map((landmark) {
-        print('Reading: $landmark, ${landmarks.keys.toList()}');
-        return landmark.toString();
-      })
-      .join(',');
+  String get dbLandmarks => landmarks.keys.map((landmark) => landmark.toString()).join(',');
 
   String get dbWidths => landmarks.values.map((filterInfo) => filterInfo.width).join(',');
 
   String get dbHeights => landmarks.values.map((filterInfo) => filterInfo.height).join(',');
 
   static Future<Filter> fromDatabase(int id, String filterName, String landmarkStr, String widthStr, String heightStr) async {
-    var result = Filter()
-      ..id = id
-      ..name = filterName;
+    Filter result = Filter(id, filterName);
 
     List<String> landmarkSplit = landmarkStr.split(',');
     List<String> widthSplit = widthStr.split(',');
@@ -47,13 +57,15 @@ class Filter {
 
     for (int i = 0; i < landmarkSplit.length; i++) {
       // String to Enum
-      var landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
+      FaceLandmarkType landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
 
-      var filename = getLandmarkFilename(filterName, landmarkType);
+      // Prepare FilterInfo members
+      String filename = getLandmarkFilename(filterName, landmarkType);
       double width = double.tryParse(widthSplit[i]);
       double height = double.tryParse(heightSplit[i]);
+      ui.Image dartImage = await getAppDartImage(filename);
 
-      result.landmarks[landmarkType] = FilterInfo(filename, width, height);
+      result.landmarks[landmarkType] = FilterInfo(filename, dartImage, width, height);
     }
     return result;
   }
@@ -64,9 +76,10 @@ class FilterModel extends BaseModel<Filter> {
   ImageML _imageML;
   Map<FaceLandmarkType, FilterInfo> _landmarks = {};
 
-
   int get currentStep => _currentStep;
+
   ImageML get imageML => _imageML;
+
   Map<FaceLandmarkType, FilterInfo> get landmarks => _landmarks;
 
   set currentStep(int value) {
@@ -89,8 +102,8 @@ class FilterModel extends BaseModel<Filter> {
     _landmarks.clear();
   }
 
-  void addLandmarkFilter(FaceLandmarkType landmarkType, String filename) {
-    landmarks[landmarkType] = FilterInfo(filename, 20, 20);
+  void addLandmarkFilter(FaceLandmarkType landmarkType, FilterInfo filterInfo) {
+    landmarks[landmarkType] = filterInfo;
     notifyListeners();
   }
 }

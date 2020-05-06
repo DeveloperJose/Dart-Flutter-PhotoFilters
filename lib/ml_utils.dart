@@ -17,8 +17,11 @@ class ImageML {
   ui.Image dartImage;
 
   bool get isFileBased => dartImage != null;
+
   double get width => dartImage.width.toDouble();
+
   double get height => dartImage.height.toDouble();
+
   Size get size => Size(width, height);
 
   // Regardless of how the image is loaded, this will be filled by the detector
@@ -38,6 +41,7 @@ class ImageML {
   }
 
   static Widget getPreviewWidget(FilterModel model) {
+    print('getPreviewWidget: FileBased ${model.imageML.isFileBased}');
     // Check if we can even display something
     if (model.imageML == null)
       return Text('[Image preview will go here]');
@@ -76,14 +80,34 @@ class FacePainter extends CustomPainter {
       ..color = Colors.red;
 
     // Need to draw image to the canvas if file-based
-    if (model.imageML.isFileBased)
-      canvas.drawImage(model.imageML.dartImage, Offset.zero, Paint());
+    if (model.imageML.isFileBased) canvas.drawImage(model.imageML.dartImage, Offset.zero, Paint());
 
-    // Draw the bounding boxes for the faces for debugging
     model.imageML.faces.forEach((Face face) {
+      // Draw the bounding boxes for the faces for debugging
       final faceRect = _reflectionRect(reflection, face.boundingBox, imageSize.width);
       canvas.drawRect(_scaleRect(rect: faceRect, imageSize: imageSize, widgetSize: size), paint);
+
+      model.landmarks.forEach((FaceLandmarkType landmarkType, FilterInfo filter) {
+        var faceLandmark = face.getLandmark(landmarkType);
+        if (faceLandmark == null)
+          return;
+        //        if (landmark != null && landmarkImage != null) {
+//          paintImage(
+//            canvas: canvas,
+//            rect: Rect.fromCenter(
+//              center: landmark.position,
+//              width: filterInfo.width ?? 0,
+//              height: filterInfo.height ?? 0,
+//            ),
+//            image: filterInfo.imageWrapper.dartImage,
+//            fit: BoxFit.fill,
+//            filterQuality: FilterQuality.high,
+//          );
+//        }
+      });
+      // Overlay the filter
     });
+
 //    for (Face face in faces) {
 //      final faceRect =
 //      _reflectionRect(reflection, face.boundingBox, imageSize.width);
@@ -106,20 +130,16 @@ class FacePainter extends CustomPainter {
 }
 
 Rect _reflectionRect(bool reflection, Rect boundingBox, double width) {
-  if (!reflection) {
+  if (!reflection)
     return boundingBox;
-  }
+
   final centerX = width / 2;
   final left = ((boundingBox.left - centerX) * -1) + centerX;
   final right = ((boundingBox.right - centerX) * -1) + centerX;
   return Rect.fromLTRB(left, boundingBox.top, right, boundingBox.bottom);
 }
 
-Rect _scaleRect({
-  @required Rect rect,
-  @required Size imageSize,
-  @required Size widgetSize,
-}) {
+Rect _scaleRect({@required Rect rect, @required Size imageSize, @required Size widgetSize}) {
   final scaleX = widgetSize.width / imageSize.width;
   final scaleY = widgetSize.height / imageSize.height;
 
