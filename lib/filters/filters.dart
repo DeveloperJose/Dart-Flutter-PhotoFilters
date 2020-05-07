@@ -21,7 +21,7 @@ class Filters extends StatelessWidget {
         child: ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
           return IndexedStack(
             index: model.stackIndex,
-            children: <Widget>[FilterList(), FilterEntry()],
+            children: [FilterList(), FilterEntry()],
           );
         }));
   }

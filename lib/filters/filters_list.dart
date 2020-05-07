@@ -1,5 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_circular_text/circular_text.dart';
+import 'package:flutter_page_indicator/flutter_page_indicator.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:flutter_swiper/flutter_swiper.dart';
 import 'package:photofilters/image_utils.dart';
 import 'package:photofilters/ml_utils.dart';
 import 'package:scoped_model/scoped_model.dart';
@@ -8,35 +12,55 @@ import 'filter_model.dart';
 import 'filters_dbworker.dart';
 
 class FilterList extends StatelessWidget {
-  final String tempFilename = 'temp_photo';
+  static const int ICON_PADDING = 30;
 
   @override
-  Widget build(BuildContext context) {
-    return ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-      double screenWidth = MediaQuery.of(context).size.width;
-      return Scaffold(
+  Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: buildScaffold);
+
+  List<String> example = ['Sharingan', 'Naruto', 'AirPods', 'Amaterasu-ni', 'Dog Ears'];
+
+  Scaffold buildScaffold(BuildContext context, Widget child, FilterModel model) => Scaffold(
         floatingActionButton: buildFloatingActionButton(model),
-        body: Column(children: [
-          ListTile(
-            trailing: IconButton(
-              icon: Icon(Icons.photo_library),
-              color: Colors.blue,
-              onPressed: () async {
-                await selectImage(context, tempFilename);
-                model.imageML = await ImageML.fromFilename(tempFilename);
-                filtersModel.clear();
-              },
+        body: Stack(children: [
+          ImageML.getPreviewWidget(context, model),
+          Positioned(
+            bottom: 15,
+            right: 0,
+            child: LimitedBox(
+              maxHeight: 150,
+              maxWidth: MediaQuery.of(context).size.width,
+              child: Swiper(
+                loop: false,
+                viewportFraction: 0.25,
+                scale: 0.1,
+                indicatorLayout: PageIndicatorLayout.SLIDE,
+                pagination: new SwiperPagination(),
+                itemCount: example.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return Container(
+                    child: LayoutBuilder(builder: (context, constraint) => Stack(alignment: AlignmentDirectional.center, children: [
+                      CircularText(
+                          backgroundPaint: Paint()
+                            ..strokeWidth = 20
+                            ..color = Colors.blue
+                            ..style = PaintingStyle.stroke,
+                          children: [
+                            TextItem(
+                              startAngle: -90,
+                              startAngleAlignment: StartAngleAlignment.center,
+                              space: 14,
+                              text: Text(example[index].toUpperCase(), style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                            )
+                          ]),
+                      Icon(Icons.monochrome_photos, size: constraint.biggest.width - ICON_PADDING),
+                    ]),
+                  ));
+                },
+              ),
             ),
-          ),
-//          Stack(children: [_buildFilterList(model)]),
-//          Container(child: Stack(fit: StackFit.expand, children: [
-//            Flexible(child: ImageML.getPreviewWidget(context, model)),
-//            _buildFilterList(model),
-//          ])),
+          )
         ]),
       );
-    });
-  }
 
   Widget _buildFilterList(FilterModel model) {
     return (model.entityList.length == 0)

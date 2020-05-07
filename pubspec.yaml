@@ -34,11 +34,16 @@ dependencies:
   image: ^2.1.12
 
   # Widgets
-  image_picker: ^0.6.5+3
-  card_settings: ^1.8.1
-  fa_stepper: ^0.0.2
+  flutter_circular_text: ^0.3.0
+  flutter_swiper: ^1.1.6
   flutter_slidable: ^0.5.4
   flutter_camera_ml_vision: ^2.2.5
+  carousel_slider: ^2.1.0
+  image_picker: ^0.6.5+3
+
+  card_settings: ^1.8.1
+  fa_stepper: ^0.0.2
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
