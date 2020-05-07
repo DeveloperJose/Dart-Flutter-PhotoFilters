@@ -49,23 +49,23 @@ class FilterList extends StatelessWidget {
               pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
               itemCount: model.entityList.length,
               itemBuilder: (BuildContext context, int index) {
-                return _buildListItem(model, index);
+                return _buildListItem(model, model.entityList[index]);
               },
             ));
 
-  Widget _buildListItem(FilterModel model, int index) => LayoutBuilder(builder: (context, constraint) {
+  Widget _buildListItem(FilterModel model, Filter item) => LayoutBuilder(builder: (context, constraint) {
         return Stack(alignment: AlignmentDirectional.center, children: [
-          _buildListItemText(model, index),
+          _buildListItemText(model, item),
           Icon(Icons.not_listed_location, size: constraint.biggest.width - ICON_PADDING),
         ]);
       });
 
-  Widget _buildListItemText(FilterModel model, int index) => CircularText(backgroundPaint: listItemTextPaint, children: [
+  Widget _buildListItemText(FilterModel model, Filter item) => CircularText(backgroundPaint: listItemTextPaint, children: [
         TextItem(
           startAngle: -90,
           startAngleAlignment: StartAngleAlignment.center,
           space: 14,
-          text: Text(model.entityList[index].name.toUpperCase(), style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+          text: Text(item.name.toUpperCase(), style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
         )
       ]);
 

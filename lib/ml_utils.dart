@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
@@ -8,19 +10,87 @@ import 'camera_utils.dart';
 import 'filters/filter_model.dart';
 import 'image_utils.dart';
 
-FaceDetector detector =
-FirebaseVision.instance.faceDetector(FaceDetectorOptions(enableClassification: false,
-    enableLandmarks: true,
-    enableTracking: true,
-    mode: FaceDetectorMode.accurate,
-    enableContours: true));
+FaceDetector detector = FirebaseVision.instance.faceDetector(FaceDetectorOptions(enableClassification: false, enableLandmarks: true, enableTracking: true, mode: FaceDetectorMode.accurate, enableContours: true));
+
+enum ImageMLType { MEMORY, FILE, ASSET }
+enum _ImageMLBuildState { START, LOADING_ASSET, LOADING_FLUTTER_IMAGE, LOADING_UI_IMAGE, LOADING_FIREBASE, FINISHED }
 
 class ImageML {
-  // If loaded from memory, these will be null
-  String filename;
-  ui.Image dartImage;
+  /// How this image needs to be loaded
+  ImageMLType loadType;
 
-  bool get isFileBased => dartImage != null;
+  /// Regardless of how the image is loaded, this will be filled by the detector
+  List<Face> faces;
+
+  ImageML(this.loadType, [this.filename]);
+
+  /// If loaded from FILE, this will be the filename that can be passed to image_utils functions
+  /// If loaded from ASSET, this will be the asset path
+  String filename;
+
+  /// If loaded from MEMORY (live camera) these will be null
+  ui.Image dartImage;
+  Image flutterImage;
+
+  bool get isLoaded => (faces != null);
+
+  Widget buildOverlayWidget(FaceOverlayPainter overlayPainter) {
+    return FittedBox(fit: BoxFit.contain, child: SizedBox(width: width, height: height, child: CustomPaint(painter: overlayPainter)));
+  }
+
+  Widget _buildProgressStack(Widget backgroundWidget, String progressText) {
+    return Center(
+      child: Stack(alignment: AlignmentDirectional.center, children: [
+        backgroundWidget,
+        Text(progressText),
+        Positioned(child: CircularProgressIndicator())
+      ]),
+    );
+  }
+
+  Widget _buildFromState(_ImageMLBuildState buildState, FaceOverlayPainter overlayPainter) {
+    if (buildState == _ImageMLBuildState.START)
+      return _buildProgressStack(Container(), 'Loading preview...');
+    else if (buildState == _ImageMLBuildState.LOADING_ASSET)
+      return _buildProgressStack(Container(), 'Loading asset from app...');
+    else if (buildState == _ImageMLBuildState.LOADING_FLUTTER_IMAGE)
+      return _buildProgressStack(Container(), 'Loading image...');
+    else if (buildState == _ImageMLBuildState.LOADING_UI_IMAGE)
+      return _buildProgressStack(flutterImage, 'Loading image dimensions and information...');
+    else if (buildState == _ImageMLBuildState.LOADING_FIREBASE)
+      return _buildProgressStack(buildOverlayWidget(overlayPainter), 'Performing machine learning recognition...');
+    else
+      return buildOverlayWidget(overlayPainter);
+  }
+
+  Stream<_ImageMLBuildState> _loadFile(FaceOverlayPainter overlayPainter) async* {
+    yield _ImageMLBuildState.LOADING_FLUTTER_IMAGE;
+    this.flutterImage = getAppFlutterImage(filename);
+    print('lmao');
+
+    yield _ImageMLBuildState.LOADING_UI_IMAGE;
+    this.dartImage = await getAppDartImage(filename);
+    print('rolf');
+
+    yield _ImageMLBuildState.LOADING_FIREBASE;
+    var firebaseImage = getAppFirebaseImage(filename);
+    this.faces = await detector.processImage(firebaseImage);
+
+    yield _ImageMLBuildState.FINISHED;
+  }
+
+  Stream<_ImageMLBuildState> _loadAsset(FaceOverlayPainter overlayPainter) async* {
+    // Save image temporarily into a file
+    yield _ImageMLBuildState.LOADING_ASSET;
+    File tempFile = await createAppFileFromAssetIfNotExists(filename);
+
+    // Load from file
+    yield* _loadFile(overlayPainter);
+    // Remove temp file
+//    tempFile.delete();
+  }
+
+  bool get usesDartUI => dartImage != null;
 
   double get width => dartImage.width.toDouble();
 
@@ -28,59 +98,57 @@ class ImageML {
 
   Size get size => Size(width, height);
 
-  // Regardless of how the image is loaded, this will be filled by the detector
-  List<Face> faces = [];
-
-  static Future<ImageML> fromFilename(String filename) async {
-    if (filename == null || filename.isEmpty) return null;
-
-    var dartImage = await getAppDartImage(filename);
-    var firebaseImage = getAppFirebaseImage(filename);
-    var faces = await detector.processImage(firebaseImage);
-
-    return ImageML()
-      ..filename = filename
-      ..dartImage = dartImage
-      ..faces = faces;
-  }
-
   static Widget getPreviewWidget(BuildContext context, FilterModel model) {
-//    print('getPreviewWidget: FileBased ${model.imageML?.isFileBased}');
-//    double width = MediaQuery.of(context).size.width;
-    // cameraMLVisionKey.currentState.cameraController.value.previewSize
-    // Check if we can even display something
     if (model.imageML == null)
       return Text('[Image preview will go here]');
-    // Check if we are displaying a static image
-    else if (model.imageML.isFileBased) {
-      return SizedBox(width: model.imageML.width, height: model.imageML.height, child: CustomPaint(painter: FacePainter(model.imageML.size, model)));
-    }
-    // Display real-time camera footage
-    else
+    else if (model.imageML.loadType == ImageMLType.MEMORY) {
       return CameraMlVision<List<Face>>(
-          key: cameraMLVisionKey,
-          cameraLensDirection: cameraLensDirection,
-          detector: detector.processImage,
-          overlayBuilder: (c) {
-            return CustomPaint(painter: FacePainter(cameraMLVisionKey.currentState.cameraValue.previewSize.flipped, model));
-          },
-          onResult: (resultFaces) {
-            model.imageML.faces = resultFaces.toList();
-            model.triggerRebuild();
-//            print('Faces: ${resultFaces.length}');
-          },
-        );
+        key: cameraMLVisionKey,
+        cameraLensDirection: cameraLensDirection,
+        detector: detector.processImage,
+        overlayBuilder: (context) {
+          return CustomPaint(painter: FaceOverlayPainter(model, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped));
+        },
+        onResult: (resultFaces) {
+          model.imageML.faces = resultFaces.toList();
+          model.triggerRebuild();
+        },
+      );
+    } else {
+      var overlayPainter = FaceOverlayPainter(model);
+      if (model.imageML.isLoaded) return model.imageML.buildOverlayWidget(overlayPainter);
+
+      return StreamBuilder<_ImageMLBuildState>(
+        initialData: _ImageMLBuildState.START,
+        stream: (model.imageML.loadType == ImageMLType.FILE) ? model.imageML._loadFile(overlayPainter) : model.imageML._loadAsset(overlayPainter),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            print('Snapshot state: ${snapshot.data}');
+            var m = model.imageML._buildFromState(snapshot.data, overlayPainter);
+            return m;
+          }
+          return Text('no datas');
+        },
+      );
+    }
   }
 }
 
-class FacePainter extends CustomPainter {
-  FacePainter(this.imageSize, this.model) {
-    if (model.imageML.isFileBased) {
-      this.imageSize = model.imageML.size;
-    }
-  }
+//print('Model ImageML Size: ${model.imageML.size}');
+//return Stack(fit: StackFit.passthrough,
+//children: [
+////        model.imageML.flutterImage,
+//FittedBox(fit: BoxFit.fitWidth, child: SizedBox(width: model.imageML.width, height: model.imageML.height, child: CustomPaint(painter: FacePainter(model.imageML.size, model)))),
+//]);
+//}
+//// Check if we are displaying a static image
+//else if (model.imageML.usesDartUI) {
+//return SizedBox(width: model.imageML.width, height: model.imageML.height, child: CustomPaint(painter: FacePainter(model.imageML.size, model)));
+//}
+class FaceOverlayPainter extends CustomPainter {
+  FaceOverlayPainter(this.model, [this.imageSize]);
 
-  bool get reflection => model.imageML.isFileBased ? false : (cameraLensDirection == CameraLensDirection.front);
+  bool get reflection => model.imageML.usesDartUI ? false : (cameraLensDirection == CameraLensDirection.front);
   Size imageSize;
   final FilterModel model;
 
@@ -88,22 +156,29 @@ class FacePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = 20.0
       ..color = Colors.red;
 
     // Need to draw image to the canvas if file-based
-    if (model.imageML.isFileBased) {
+    if (model.imageML.usesDartUI) {
       canvas.drawImage(model.imageML.dartImage, Offset.zero, Paint());
+      imageSize = model.imageML.size;
     }
 
-    model.imageML.faces.forEach((Face face) {
+    model.imageML.faces?.forEach((Face face) {
       // Draw the bounding boxes for the faces for debugging
       final faceRect = _reflectionRect(reflection, face.boundingBox, imageSize.width, imageSize.height);
       canvas.drawRect(_scaleRect(rect: faceRect, imageSize: imageSize, widgetSize: size), paint);
 
 //    canvas.drawRect(faceRect, paint);
 
-      model.landmarks.forEach((FaceLandmarkType landmarkType, FilterInfo filter) {
+      FaceLandmark faceLandmark = face.getLandmark(FaceLandmarkType.leftEar);
+      if (faceLandmark != null) {
+        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: 10, height: 10), imageSize: imageSize, widgetSize: size);
+        canvas.drawRect(landmarkRect, paint);
+      }
+
+      model.landmarks?.forEach((FaceLandmarkType landmarkType, FilterInfo filter) {
         FaceLandmark faceLandmark = face.getLandmark(landmarkType);
         if (faceLandmark == null) return;
 
@@ -139,7 +214,7 @@ class FacePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(FacePainter oldDelegate) {
+  bool shouldRepaint(FaceOverlayPainter oldDelegate) {
     return true;
 //    return oldDelegate.imageSize != imageSize || oldDelegate.faces != faces;
   }
@@ -238,3 +313,110 @@ Rect _scaleRect({@required Rect rect, @required Size imageSize, @required Size w
 //    return true;
 //  }
 //}
+/// Modified from https://github.com/wal33d006/jumping_dots/blob/master/lib/jumping_dots.dart
+class _JumpingLetter extends AnimatedWidget {
+  final String letter;
+  final TextStyle style;
+
+  _JumpingLetter({Key key, Animation<double> animation, this.letter, this.style}) : super(key: key, listenable: animation);
+
+  Widget build(BuildContext context) {
+    final Animation<double> animation = listenable;
+    return Container(
+      height: animation.value,
+      child: Text(letter, style: style),
+    );
+  }
+}
+
+class JumpingText extends StatefulWidget {
+  final TextStyle letterStyle;
+  final double letterSpacing;
+
+  /// Animation
+  final int milliseconds;
+  final double beginTweenValue = 10.0;
+  final double endTweenValue = 20.0;
+
+  JumpingText({
+    Key key,
+    this.letterStyle,
+    this.letterSpacing = 0.0,
+    this.milliseconds = 250,
+  }) : super(key: key);
+
+  _JumpingTextState createState() => _JumpingTextState();
+}
+
+class _JumpingTextState extends State<JumpingText> with TickerProviderStateMixin {
+  String _text = "";
+
+  String get text => _text;
+
+  set text(String value) {
+    setState(() {
+      _text = value;
+    });
+  }
+
+  List<AnimationController> controllers = new List<AnimationController>();
+  List<Animation<double>> animations = new List<Animation<double>>();
+  List<Widget> _widgets = new List<Widget>();
+
+  @override
+  void initState() {
+    super.initState();
+    for (int i = 0; i < text.length; i++) {
+      _addAnimationControllers();
+      _buildAnimations(i);
+      _addListOfDots(i);
+    }
+
+    controllers[0].forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 30.0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: _widgets,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    for (int i = 0; i < text.length; i++) controllers[i].dispose();
+    super.dispose();
+  }
+
+  void stop() {
+    for (int i = 0; i < text.length; i++) controllers[i].stop();
+  }
+
+  void _addAnimationControllers() {
+    controllers.add(AnimationController(duration: Duration(milliseconds: widget.milliseconds), vsync: this));
+  }
+
+  void _addListOfDots(int index) {
+    _widgets.add(Padding(
+      padding: EdgeInsets.only(right: widget.letterSpacing),
+      child: _JumpingLetter(animation: animations[index], letter: text[index], style: widget.letterStyle),
+    ));
+  }
+
+  void _buildAnimations(int index) {
+    animations.add(Tween(begin: widget.beginTweenValue, end: widget.endTweenValue).animate(controllers[index])
+      ..addStatusListener((AnimationStatus status) {
+        if (status == AnimationStatus.completed) controllers[index].reverse();
+        if (index == text.length - 1 && status == AnimationStatus.dismissed) {
+          controllers[0].forward();
+        }
+        if (animations[index].value > widget.endTweenValue / 2 && index < text.length - 1) {
+          controllers[index + 1].forward();
+        }
+      }));
+  }
+}

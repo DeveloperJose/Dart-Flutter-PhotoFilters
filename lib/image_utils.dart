@@ -4,9 +4,11 @@ import 'dart:ui' as ui;
 
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
 import 'package:image/image.dart' as im_lib;
+import 'package:flutter_native_image/flutter_native_image.dart';
 
 import 'package:camera/camera.dart';
 
@@ -19,6 +21,18 @@ Image getAppFlutterImage(String filename) {
   File file = getAppFile(filename);
   if (!file.existsSync()) return null;
   return Image.memory(file.readAsBytesSync());
+}
+
+Future<File> createAppFileFromAssetIfNotExists(String assetFilename) async {
+  File file = getAppFile(assetFilename);
+  print('File exists: ${file.existsSync()}');
+  if (!file.existsSync()){
+    ByteData data = await rootBundle.load(assetFilename);
+    print('ByteData: $data');
+    file.createSync(recursive: true);
+    file.writeAsBytesSync(data.buffer.asUint8List());
+  }
+  return file;
 }
 
 Future<ui.Image> getAppDartImage(String filename) async {

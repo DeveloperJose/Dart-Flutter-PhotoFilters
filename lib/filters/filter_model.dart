@@ -75,7 +75,7 @@ class Filter {
 
 class FilterModel extends BaseModel<Filter> {
   int _currentStep = 0;
-  ImageML _imageML = ImageML();
+  ImageML _imageML;
   Map<FaceLandmarkType, FilterInfo> _landmarks = {};
 
   int get currentStep => _currentStep;

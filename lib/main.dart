@@ -21,6 +21,8 @@ void main() async {
     cameraControllers.add(controller);
   }
 
+  filtersModel.imageML = ImageML(ImageMLType.ASSET, 'assets/preview.jpg');
+
   runApp(MyApp());
 }
 
