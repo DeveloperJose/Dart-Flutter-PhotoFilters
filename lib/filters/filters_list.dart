@@ -14,6 +14,11 @@ import 'filters_dbworker.dart';
 class FilterList extends StatelessWidget {
   static const int ICON_PADDING = 30;
 
+  static Paint listItemTextPaint = Paint()
+    ..strokeWidth = 20
+    ..color = Colors.deepPurple
+    ..style = PaintingStyle.stroke;
+
   @override
   Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: buildScaffold);
 
@@ -24,57 +29,45 @@ class FilterList extends StatelessWidget {
         body: Stack(children: [
           ImageML.getPreviewWidget(context, model),
           Positioned(
-            bottom: 15,
+            bottom: 10,
             right: 0,
-            child: LimitedBox(
-              maxHeight: 150,
-              maxWidth: MediaQuery.of(context).size.width,
-              child: Swiper(
-                loop: false,
-                viewportFraction: 0.25,
-                scale: 0.1,
-                indicatorLayout: PageIndicatorLayout.SLIDE,
-                pagination: new SwiperPagination(),
-                itemCount: example.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Container(
-                    child: LayoutBuilder(builder: (context, constraint) => Stack(alignment: AlignmentDirectional.center, children: [
-                      CircularText(
-                          backgroundPaint: Paint()
-                            ..strokeWidth = 20
-                            ..color = Colors.blue
-                            ..style = PaintingStyle.stroke,
-                          children: [
-                            TextItem(
-                              startAngle: -90,
-                              startAngleAlignment: StartAngleAlignment.center,
-                              space: 14,
-                              text: Text(example[index].toUpperCase(), style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-                            )
-                          ]),
-                      Icon(Icons.monochrome_photos, size: constraint.biggest.width - ICON_PADDING),
-                    ]),
-                  ));
-                },
-              ),
-            ),
+            child: _buildList(context, model),
           )
         ]),
       );
 
-  Widget _buildFilterList(FilterModel model) {
-    return (model.entityList.length == 0)
-        ? Container(child: Text('No filters added yet!'))
-        : (model.imageML != null)
-            ? SizedBox.expand(
-                child: ListView.builder(
-                scrollDirection: Axis.vertical,
-                physics: ScrollPhysics(),
-                itemCount: model.entityList.length,
-                itemBuilder: (BuildContext context, int index) => buildSlidable(context, model, model.entityList[index]),
-              ))
-            : Container(child: Container(child: Text('Cannot apply filters before an image is selected!')));
-  }
+  Widget _buildList(BuildContext context, FilterModel model) => LimitedBox(
+      maxHeight: 150,
+      maxWidth: MediaQuery.of(context).size.width,
+      child: model.entityList.length == 0
+          ? Container(alignment: Alignment.bottomCenter, child: Container(width: double.maxFinite, color: Colors.grey.shade200, child: Text('No filters created yet!', textAlign: TextAlign.center)))
+          : Swiper(
+              loop: false,
+              viewportFraction: 0.25,
+              scale: 0.1,
+              indicatorLayout: PageIndicatorLayout.SLIDE,
+              pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
+              itemCount: model.entityList.length,
+              itemBuilder: (BuildContext context, int index) {
+                return _buildListItem(model, index);
+              },
+            ));
+
+  Widget _buildListItem(FilterModel model, int index) => LayoutBuilder(builder: (context, constraint) {
+        return Stack(alignment: AlignmentDirectional.center, children: [
+          _buildListItemText(model, index),
+          Icon(Icons.not_listed_location, size: constraint.biggest.width - ICON_PADDING),
+        ]);
+      });
+
+  Widget _buildListItemText(FilterModel model, int index) => CircularText(backgroundPaint: listItemTextPaint, children: [
+        TextItem(
+          startAngle: -90,
+          startAngleAlignment: StartAngleAlignment.center,
+          space: 14,
+          text: Text(model.entityList[index].name.toUpperCase(), style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+        )
+      ]);
 
   Widget buildFloatingActionButton(FilterModel model) => (model.imageML != null)
       ? FloatingActionButton(
