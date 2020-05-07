@@ -50,8 +50,7 @@ class ImageML {
   }
 
   Widget _buildProgressStack(String progressText, [Widget backgroundWidget]) {
-    if (backgroundWidget == null)
-      backgroundWidget = Container();
+    if (backgroundWidget == null) backgroundWidget = Container();
     return Stack(alignment: AlignmentDirectional.center, children: [backgroundWidget, Text(progressText), Positioned(child: CircularProgressIndicator())]);
   }
 
@@ -147,7 +146,7 @@ class FaceOverlayPainter extends CustomPainter {
       // TODO: Debugging landmarks
       FaceLandmark faceLandmark = face.getLandmark(FaceLandmarkType.leftEar);
       if (faceLandmark != null) {
-        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: 10, height: 10), imageSize: imageSize, widgetSize: size);
+        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: 200, height: 200), imageSize: imageSize, widgetSize: size);
         canvas.drawRect(landmarkRect, paint);
       }
 
@@ -156,9 +155,8 @@ class FaceOverlayPainter extends CustomPainter {
         FaceLandmark faceLandmark = face.getLandmark(landmarkType);
         if (faceLandmark == null) return;
 
-        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: filter.width, height: filter.height), imageSize: imageSize, widgetSize: size);
         if (filter.dartImage == null) return;
-
+        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: filter.width ?? 0, height: filter.height ?? 0), imageSize: imageSize, widgetSize: size);
         paintImage(canvas: canvas, rect: landmarkRect, image: filter.dartImage, fit: BoxFit.fill, filterQuality: FilterQuality.high);
       });
     });
@@ -166,7 +164,7 @@ class FaceOverlayPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(FaceOverlayPainter oldDelegate) {
-    return oldDelegate.imageSize != imageSize || oldDelegate.model?.imageML?.faces != model?.imageML?.faces || oldDelegate.model.landmarks != model.landmarks;
+    return true;
   }
 }
 

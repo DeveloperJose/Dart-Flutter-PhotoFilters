@@ -25,7 +25,7 @@ class FilterEntry extends StatelessWidget {
 
   Widget _buildPreview(BuildContext context, FilterModel model) => (model.currentStep >= 1)
       ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [
-          SizedBox(width:100, height:100, child: Text('Image preview will go here')),
+          ImageML.getPreviewWidget(context, model),
           _buildRefreshPreviewFAB(model),
         ])
       : Container();
@@ -83,7 +83,7 @@ class FilterEntry extends StatelessWidget {
             label: 'Width',
             hintText: '##',
             decimalDigits: 1,
-            maxLength: 2,
+            maxLength: 4,
             initialValue: model.landmarks[type]?.width,
             onChanged: (value) => model.landmarks[type]?.width = value,
           ),
@@ -93,7 +93,7 @@ class FilterEntry extends StatelessWidget {
             label: 'Height',
             hintText: '##',
             decimalDigits: 1,
-            maxLength: 2,
+            maxLength: 4,
             initialValue: model.landmarks[type]?.height,
             onChanged: (value) => model.landmarks[type]?.height = value,
           ),

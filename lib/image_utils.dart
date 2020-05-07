@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
-import 'package:image/image.dart' as im_lib;
 import 'package:flutter_native_image/flutter_native_image.dart';
 
 import 'package:camera/camera.dart';
