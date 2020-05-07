@@ -1,4 +1,3 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:photofilters/image_utils.dart';
@@ -7,15 +6,14 @@ import 'package:scoped_model/scoped_model.dart';
 
 import 'filter_model.dart';
 import 'filters_dbworker.dart';
-import 'package:photofilters/camera_utils.dart';
 
 class FilterList extends StatelessWidget {
   final String tempFilename = 'temp_photo';
 
   @override
-  Widget build(BuildContext context) {;
+  Widget build(BuildContext context) {
     return ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-      print('FiltersModel: ${filtersModel.imageML}, Model ML ${model.imageML}');
+      double screenWidth = MediaQuery.of(context).size.width;
       return Scaffold(
         floatingActionButton: buildFloatingActionButton(model),
         body: Column(children: [
@@ -30,21 +28,28 @@ class FilterList extends StatelessWidget {
               },
             ),
           ),
-          ImageML.getPreviewWidget(model),
-          (model.entityList.length == 0)
-              ? Center(child: Text('No filters added yet!'))
-              : (model.imageML != null)
-                  ? Expanded(
-                      child: ListView.builder(
-                      scrollDirection: Axis.vertical,
-                      physics: ScrollPhysics(),
-                      itemCount: model.entityList.length,
-                      itemBuilder: (BuildContext context, int index) => buildSlidable(context, model, model.entityList[index]),
-                    ))
-                  : Text('Cannot apply filters before an image is selected!')
+//          Stack(children: [_buildFilterList(model)]),
+//          Container(child: Stack(fit: StackFit.expand, children: [
+//            Flexible(child: ImageML.getPreviewWidget(context, model)),
+//            _buildFilterList(model),
+//          ])),
         ]),
       );
     });
+  }
+
+  Widget _buildFilterList(FilterModel model) {
+    return (model.entityList.length == 0)
+        ? Container(child: Text('No filters added yet!'))
+        : (model.imageML != null)
+            ? SizedBox.expand(
+                child: ListView.builder(
+                scrollDirection: Axis.vertical,
+                physics: ScrollPhysics(),
+                itemCount: model.entityList.length,
+                itemBuilder: (BuildContext context, int index) => buildSlidable(context, model, model.entityList[index]),
+              ))
+            : Container(child: Container(child: Text('Cannot apply filters before an image is selected!')));
   }
 
   Widget buildFloatingActionButton(FilterModel model) => (model.imageML != null)

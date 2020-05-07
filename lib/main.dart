@@ -13,6 +13,14 @@ void main() async {
 
   // Initialize utilities
   mDocsDir = await getApplicationDocumentsDirectory();
+  cameras = await availableCameras();
+
+  for(CameraDescription cameraDescription in cameras){
+    CameraController controller = CameraController(cameraDescription, ResolutionPreset.high, enableAudio: false);
+    await controller.initialize();
+    cameraControllers.add(controller);
+  }
+
   runApp(MyApp());
 }
 
@@ -36,5 +44,7 @@ class MyAppState extends State<MyApp> {
   void dispose() {
     super.dispose();
     detector.close();
+
+    cameraControllers.forEach((controller) => controller.dispose());
   }
 }

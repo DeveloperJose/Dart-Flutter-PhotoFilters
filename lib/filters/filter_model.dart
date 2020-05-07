@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'dart:ui';
 
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:photofilters/base_model.dart';
@@ -13,6 +14,7 @@ class FilterInfo {
 
   double width;
   double height;
+  Size get size => Size(width, height);
 
   FilterInfo(this.imageFilename, this.dartImage, this.width, this.height);
 
@@ -33,7 +35,7 @@ class Filter {
   String name;
   Map<FaceLandmarkType, FilterInfo> landmarks = {};
 
-  Filter([this.id, this.name, this.landmarks = const {}]);
+  Filter([this.id, this.name]);
 
   @override
   String toString() {
@@ -73,7 +75,7 @@ class Filter {
 
 class FilterModel extends BaseModel<Filter> {
   int _currentStep = 0;
-  ImageML _imageML;
+  ImageML _imageML = ImageML();
   Map<FaceLandmarkType, FilterInfo> _landmarks = {};
 
   int get currentStep => _currentStep;

@@ -8,8 +8,8 @@ import 'package:photofilters/image_utils.dart';
 import 'package:photofilters/ml_utils.dart';
 import 'package:scoped_model/scoped_model.dart';
 
-import 'filters_dbworker.dart';
 import 'filter_model.dart';
+import 'filters_dbworker.dart';
 
 class FilterEntry extends StatelessWidget {
   final GlobalKey<FormState> _formKey = GlobalKey();
@@ -19,12 +19,15 @@ class FilterEntry extends StatelessWidget {
     return ScopedModel<FilterModel>(
         model: filtersModel,
         child: ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-          return Scaffold(body: Form(key: _formKey, child: Column(children: [_buildPreview(model), Expanded(child: _buildLandmarkStepper(context, model))])));
+          return Scaffold(body: Form(key: _formKey, child: Column(children: [_buildPreview(context, model), Expanded(child: _buildLandmarkStepper(context, model))])));
         }));
   }
 
-  Widget _buildPreview(FilterModel model) => (model.currentStep >= 1)
-      ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [ImageML.getPreviewWidget(model), _buildRefreshPreviewFAB(model)])
+  Widget _buildPreview(BuildContext context, FilterModel model) => (model.currentStep >= 1)
+      ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [
+          SizedBox(width:100, height:100, child: Text('Image preview will go here')),
+          _buildRefreshPreviewFAB(model),
+        ])
       : Container();
 
   FloatingActionButton _buildRefreshPreviewFAB(FilterModel model) => FloatingActionButton(child: Icon(Icons.refresh), onPressed: () => model.triggerRebuild());
@@ -117,14 +120,13 @@ class FilterEntry extends StatelessWidget {
         if (model.currentStep == steps.length - 1)
           saveEntry(context, model);
         else if (model.currentStep <= steps.length) model.currentStep++;
-
       },
       onStepCancel: () {
         if (model.currentStep > 0) model.currentStep--;
       },
       controlsBuilder: (buildContext, {onStepContinue, onStepCancel}) => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
         FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
-        FlatButton(child:  Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
+        FlatButton(child: Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
         RaisedButton(child: (model.currentStep == steps.length - 1) ? Text('Finish and Save') : Text('Next'), onPressed: onStepContinue)
       ]),
     );
