@@ -25,14 +25,12 @@ Image getAppFlutterImage(String filename) {
 
 Future<File> createAppFileFromAssetIfNotExists(String assetFilename) async {
   File file = getAppFile(assetFilename);
-  print('File exists: ${file.existsSync()}');
   if (!file.existsSync()){
     ByteData data = await rootBundle.load(assetFilename);
-    print('ByteData: $data');
     file.createSync(recursive: true);
     file.writeAsBytesSync(data.buffer.asUint8List());
   }
-  return file;
+  return getAppFile(assetFilename);
 }
 
 Future<ui.Image> getAppDartImage(String filename) async {
