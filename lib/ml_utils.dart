@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
 
@@ -31,7 +32,7 @@ class ImageML {
   Image flutterImage;
 
   /// Is this image already loaded?
-  bool get isLoaded => (faces != null);
+  bool isLoaded = false;
 
   /// The width of the image, null if not loaded or loaded from memory
   double get width => dartImage?.width?.toDouble();
@@ -42,10 +43,13 @@ class ImageML {
   /// The size of the image, null if not loaded or loaded from memory
   Size get size => Size(width, height);
 
-  ImageML(this.loadType, [this.filename]);
+  ImageML(this.loadType, [this.filename]) {
+    isLoaded = loadType == ImageMLType.MEMORY;
+  }
 
   /// Builds the custom painter widget which draws all our filter effects onto the canvas
   Widget buildOverlayWidget(FaceOverlayPainter overlayPainter) {
+    print('build overlay: $width, $height');
     return FittedBox(fit: BoxFit.contain, child: SizedBox(width: width, height: height, child: CustomPaint(painter: overlayPainter)));
   }
 
@@ -66,6 +70,7 @@ class ImageML {
     this.faces = await detector.processImage(firebaseImage);
 
     yield buildOverlayWidget(overlayPainter);
+    isLoaded = true;
   }
 
   Stream<Widget> _loadAsset(FaceOverlayPainter overlayPainter) async* {
@@ -81,6 +86,7 @@ class ImageML {
     tempFile.delete();
 
     yield buildOverlayWidget(overlayPainter);
+    isLoaded = true;
   }
 
   static Widget getPreviewWidget(BuildContext context, FilterModel model) {
@@ -101,6 +107,7 @@ class ImageML {
       );
     } else {
       var overlayPainter = FaceOverlayPainter(model);
+      print('Loaded: ${model.imageML.isLoaded}');
       // Show if loaded. If not loaded, load asynchronously so the user doesn't get impacted
       if (model.imageML.isLoaded)
         return model.imageML.buildOverlayWidget(overlayPainter);
@@ -109,6 +116,9 @@ class ImageML {
           initialData: Container(),
           stream: (model.imageML.loadType == ImageMLType.FILE) ? model.imageML._loadFile(overlayPainter) : model.imageML._loadAsset(overlayPainter),
           builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done)
+              model.triggerRebuild();
+
             return snapshot.data;
           },
         );
@@ -156,7 +166,9 @@ class FaceOverlayPainter extends CustomPainter {
         if (faceLandmark == null) return;
 
         if (filter.dartImage == null) return;
-        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: filter.width ?? 0, height: filter.height ?? 0), imageSize: imageSize, widgetSize: size);
+        final scaleX = size.width / imageSize.width;
+        final scaleY = size.height / imageSize.height;
+        Rect landmarkRect = _scaleRect(rect: Rect.fromCenter(center: faceLandmark.position, width: filter.width*scaleX ?? 0, height: filter.height*scaleY ?? 0), imageSize: imageSize, widgetSize: size);
         paintImage(canvas: canvas, rect: landmarkRect, image: filter.dartImage, fit: BoxFit.fill, filterQuality: FilterQuality.high);
       });
     });

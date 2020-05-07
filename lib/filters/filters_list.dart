@@ -28,6 +28,14 @@ class FilterList extends StatelessWidget {
         floatingActionButton: buildFloatingActionButton(model),
         body: Stack(children: [
           ImageML.getPreviewWidget(context, model),
+          RaisedButton(
+              child: Text('Live or Die'),
+              onPressed: () {
+                if (model.imageML.loadType == ImageMLType.MEMORY)
+                  model.imageML = ImageML(ImageMLType.ASSET, 'assets/preview.jpg');
+                else
+                  model.imageML = ImageML(ImageMLType.MEMORY);
+              }),
           Positioned(
             bottom: 10,
             right: 0,
@@ -41,17 +49,25 @@ class FilterList extends StatelessWidget {
       maxWidth: MediaQuery.of(context).size.width,
       child: model.entityList.length == 0
           ? Container(alignment: Alignment.bottomCenter, child: Container(width: double.maxFinite, color: Colors.grey.shade200, child: Text('No filters created yet!', textAlign: TextAlign.center)))
-          : Swiper(
-              loop: false,
-              viewportFraction: 0.25,
-              scale: 0.1,
-              indicatorLayout: PageIndicatorLayout.SLIDE,
-              pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
-              itemCount: model.entityList.length,
-              itemBuilder: (BuildContext context, int index) {
-                return _buildListItem(model, model.entityList[index]);
-              },
-            ));
+          : !model.imageML.isLoaded
+              ? Container(alignment: Alignment.bottomCenter, child: Container(width: double.maxFinite, color: Colors.grey.shade200, child: Text('Filters unavailable until preview is loaded', textAlign: TextAlign.center)))
+              : Swiper(
+                  loop: false,
+                  viewportFraction: 0.25,
+                  scale: 0.1,
+                  indicatorLayout: PageIndicatorLayout.SLIDE,
+                  pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
+                  index: model.currentStep,
+                  onIndexChanged: (index) {
+                    model.currentStep = index;
+                    model.landmarks = model.entityList[index].landmarks;
+                    model.triggerRebuild();
+                  },
+                  itemCount: model.entityList.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return _buildListItem(model, model.entityList[index]);
+                  },
+                ));
 
   Widget _buildListItem(FilterModel model, Filter item) => LayoutBuilder(builder: (context, constraint) {
         return Stack(alignment: AlignmentDirectional.center, children: [

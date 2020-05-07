@@ -104,6 +104,12 @@ class FilterModel extends BaseModel<Filter> {
     _landmarks.clear();
   }
 
+  @override
+  void loadData(database) {
+    super.loadData(database);
+    entityList.insert(0, Filter(-1, 'No Filter'));
+  }
+
   void addLandmarkFilter(FaceLandmarkType landmarkType, FilterInfo filterInfo) {
     landmarks[landmarkType] = filterInfo;
     notifyListeners();
