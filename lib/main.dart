@@ -1,4 +1,6 @@
+import 'package:feature_discovery/feature_discovery.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
 
@@ -12,6 +14,11 @@ import 'ml/image_ml.dart';
 
 FilterModel mainFilterModel = FilterModel();
 
+void clearTemporaryFiles() {
+  var tempFile = getAppFile('temp');
+  if (tempFile.existsSync()) tempFile.deleteSync(recursive: true);
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,6 +27,9 @@ void main() async {
 
   // Initialize app to camera live stream mode
   mainFilterModel.imageML = ImageML(ImageMLType.LIVE_CAMERA_MEMORY);
+
+  // Clear temporary files
+  clearTemporaryFiles();
 
   // Load DB data
   mainFilterModel.loadData(DBWorker.db);
@@ -35,12 +45,13 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        debugShowCheckedModeBanner: true,
-        home: Scaffold(
-          appBar: AppBar(title: Text('PhotoFilters by Jose G. Perez')),
-          body: buildScopedModel(),
-        ));
+    return FeatureDiscovery(
+        child: MaterialApp(
+            debugShowCheckedModeBanner: true,
+            home: Scaffold(
+              appBar: AppBar(title: Text('PhotoFilters by Jose G. Perez')),
+              body: buildScopedModel(),
+            )));
   }
 
   ScopedModel<FilterModel> buildScopedModel() {
@@ -56,7 +67,6 @@ class MyAppState extends State<MyApp> {
     super.dispose();
     faceDetector.close();
 
-    var tempFile = getAppFile('temp');
-    if (tempFile.existsSync()) tempFile.deleteSync(recursive: true);
+    clearTemporaryFiles();
   }
 }

@@ -1,5 +1,7 @@
+import 'package:feature_discovery/feature_discovery.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_circular_text/circular_text.dart';
 import 'package:flutter_page_indicator/flutter_page_indicator.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -13,8 +15,13 @@ import 'filter_model.dart';
 import 'filter_preview_widget.dart';
 import 'filters_dbworker.dart';
 
-class FilterList extends StatelessWidget {
-  static const int ICON_PADDING = 30;
+class FilterList extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => FilterListState();
+}
+
+class FilterListState extends State<FilterList> {
+  static const double ICON_PADDING = 30.0;
 
   static Paint listItemTextPaint = Paint()
     ..strokeWidth = 20
@@ -22,12 +29,25 @@ class FilterList extends StatelessWidget {
     ..style = PaintingStyle.stroke;
 
   @override
-  Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: buildScaffold);
+  void initState() {
+    SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
+      FeatureDiscovery.discoverFeatures(context, ['filter_list', 'flip_camera']);
+    });
 
-  Scaffold buildScaffold(BuildContext context, Widget child, FilterModel model) => Scaffold(
-        floatingActionButton: buildFloatingActionButton(context, model),
-        body: Stack(children: [FilterPreviewWidget(filterModel: model), Positioned(bottom: 10, right: 0, child: _buildList(context, model))]),
-      );
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedModelDescendant<FilterModel>(builder: buildScaffold);
+  }
+
+  Scaffold buildScaffold(BuildContext context, Widget child, FilterModel model) {
+    return Scaffold(
+      floatingActionButton: buildFloatingActionButton(context, model),
+      body: Stack(children: [FilterPreviewWidget(filterModel: model), Positioned(bottom: 10, right: 0, child: _buildList(context, model))]),
+    );
+  }
 
   Widget _buildList(BuildContext context, FilterModel model) => LimitedBox(
       maxHeight: 150,
@@ -36,28 +56,34 @@ class FilterList extends StatelessWidget {
           ? Container(alignment: Alignment.bottomCenter, child: Container(width: double.maxFinite, color: Colors.grey.shade200, child: Text('No filters created yet!', textAlign: TextAlign.center)))
           : !model.imageML.isLoaded
               ? Container(alignment: Alignment.bottomCenter, child: Container(width: double.maxFinite, color: Colors.grey.shade200, child: Text('Filters unavailable until preview is loaded', textAlign: TextAlign.center)))
-              : Swiper(
-                  loop: false,
-                  viewportFraction: 0.25,
-                  scale: 0.1,
-                  indicatorLayout: PageIndicatorLayout.SLIDE,
-                  pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
-                  index: model.currentPreviewedFilterIndex,
-                  onIndexChanged: (index) {
-                    model.currentPreviewedFilterIndex = index;
-                    model.landmarks = model.entityList[index].landmarks;
-                    model.triggerRebuild();
-                  },
-                  itemCount: model.entityList.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return _buildListItem(model, model.entityList[index]);
-                  },
-                ));
+              : DescribedFeatureOverlay(
+                  featureId: 'filter_list',
+                  tapTarget: _buildListItem(model, Filter(-1, 'Filter Name')),
+                  title: Text('Filter List'),
+                  description: Text('Swipe left and right to move between your filters'),
+                  child: Swiper(
+                    loop: false,
+                    viewportFraction: 0.25,
+                    scale: 0.1,
+                    indicatorLayout: PageIndicatorLayout.SLIDE,
+                    pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
+                    index: model.currentPreviewedFilterIndex,
+                    onIndexChanged: (index) {
+                      model.currentPreviewedFilterIndex = index;
+                      model.landmarks = model.entityList[index].landmarks;
+                      model.triggerRebuild();
+                    },
+                    itemCount: model.entityList.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return _buildListItem(model, model.entityList[index]);
+                    },
+                  )));
 
   Widget _buildListItem(FilterModel model, Filter item) => LayoutBuilder(builder: (context, constraint) {
+        double width = constraint.biggest.width > 0 ? constraint.biggest.width - ICON_PADDING : 1;
         return Stack(alignment: AlignmentDirectional.center, children: [
           _buildListItemText(model, item),
-          Icon(Icons.not_listed_location, size: constraint.biggest.width - ICON_PADDING),
+          Icon(Icons.not_listed_location, size: width),
         ]);
       });
 
@@ -72,24 +98,64 @@ class FilterList extends StatelessWidget {
 
   Widget buildFloatingActionButton(BuildContext context, FilterModel model) {
     List<SpeedDialChild> list = [];
-    if (model.imageML.loadType == ImageMLType.LIVE_CAMERA_MEMORY)
-      list.add(SpeedDialChild(child: Icon(Icons.image), label: 'Open image from phone', onTap: () => editImageFromPhone(context, model)));
-    else
-      list.add(SpeedDialChild(child: Icon(Icons.face), label: 'Open live camera view', onTap: () => model.imageML = ImageML(ImageMLType.LIVE_CAMERA_MEMORY)));
+    if (model.imageML.loadType == ImageMLType.LIVE_CAMERA_MEMORY) {
+      var openImageIcon = Icon(Icons.image);
+      var openImageTitle = Text('Open Image From Phone');
+      var openImageDescription = Text('Instead of applying filters to your live camera view apply them to an image from your gallery');
+      var openImageChild = DescribedFeatureOverlay(featureId: 'open_image', child: openImageIcon, tapTarget: openImageIcon, title: openImageTitle, description: openImageDescription, contentLocation: ContentLocation.above);
 
-    list.add(SpeedDialChild(child: Icon(Icons.library_add), label: 'Add a new filter', onTap: () => editFilter(model, Filter())));
+      list.add(SpeedDialChild(child: openImageChild, label: 'Open image from phone', onTap: () => editImageFromPhone(context, model)));
+    } else {
+      var openCameraIcon = Icon(Icons.face);
+      var openCameraTitle = Text('Open Live Camera View');
+      var openCameraDescription = Text('Switch to the live camera view to apply filters to your face');
+      var openCameraChild = DescribedFeatureOverlay(featureId: 'open_camera', child: openCameraIcon, tapTarget: openCameraIcon, title: openCameraTitle, description: openCameraDescription, contentLocation: ContentLocation.above);
 
-    if (model.currentPreviewedFilterIndex > 0) {
-      list.add(SpeedDialChild(child: Icon(Icons.delete), label: 'Delete "${model.currentPreviewedFilter?.name}" filter'));
-      list.add(SpeedDialChild(child: Icon(Icons.edit), label: 'Edit "${model.currentPreviewedFilter?.name}" filter'));
+      list.add(SpeedDialChild(child: openCameraChild, label: 'Open live camera view', onTap: () => model.imageML = ImageML(ImageMLType.LIVE_CAMERA_MEMORY)));
     }
 
-    return SpeedDial(animatedIcon: AnimatedIcons.menu_close, children: list);
+    var addFilterIcon = Icon(Icons.library_add);
+    var addFilterTitle = Text('Add A New Filter');
+    var addFilterDescription = Text('Begin the filter creation process here');
+    var addFilterChild = DescribedFeatureOverlay(featureId: 'add_filter', child: addFilterIcon, tapTarget: addFilterIcon, title: addFilterTitle, description: addFilterDescription);
+    list.add(SpeedDialChild(child: addFilterChild, label: 'Add a new filter', onTap: () => editFilter(model, Filter())));
+
+    if (model.currentPreviewedFilterIndex > 0) {
+      var deleteFilterIcon = Icon(Icons.delete);
+      var deleteFilterTitle = Text('Delete An Existing Filter');
+      var deleteFilterDescription = Text('Delete the currently selected filter from the list of filters');
+      var deleteFilterChild = DescribedFeatureOverlay(featureId: 'delete_filter', child: deleteFilterIcon, tapTarget: deleteFilterIcon, title: deleteFilterTitle, description: deleteFilterDescription);
+      list.add(SpeedDialChild(child: deleteFilterChild, label: 'Delete "${model.currentPreviewedFilter?.name}" filter'));
+
+      var editFilterIcon = Icon(Icons.edit);
+      var editFilterTitle = Text('Edit An Existing Filter');
+      var editFilterDescription = Text('Edit the currently selected filter using the creation wizard again');
+      var editFilterChild = DescribedFeatureOverlay(featureId: 'edit_filter', child: editFilterIcon, tapTarget: editFilterIcon, title: editFilterTitle, description: editFilterDescription);
+      list.add(SpeedDialChild(child: editFilterChild, label: 'Edit "${model.currentPreviewedFilter?.name}" filter'));
+    }
+
+    list.add(SpeedDialChild(
+        child: Icon(Icons.camera),
+        onTap: () {
+          var list = ['filter_list', 'flip_camera'];
+          FeatureDiscovery.clearPreferences(context, list);
+          FeatureDiscovery.discoverFeatures(context, list);
+        }));
+
+    var fab = SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        children: list,
+        onOpen: () {
+          FeatureDiscovery.discoverFeatures(context, ['add_filter', 'open_image', 'open_camera', 'edit_filter', 'delete_filter']);
+        });
+    return fab;
   }
 
   void editImageFromPhone(BuildContext context, FilterModel model) async {
     await selectImage(context, 'temp');
-    if (getAppFile('temp').existsSync()) model.imageML = ImageML(ImageMLType.FILE, 'temp');
+    if (getAppFile('temp').existsSync()) {
+      model.imageML = ImageML(ImageMLType.FILE, 'temp');
+    }
   }
 
   void editFilter(FilterModel model, Filter filter) async {

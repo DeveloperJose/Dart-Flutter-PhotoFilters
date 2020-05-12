@@ -1,4 +1,6 @@
+import 'package:feature_discovery/feature_discovery.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
 import 'package:photofilters/ml/face_overlay_painter.dart';
@@ -55,17 +57,31 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
         detector: faceDetector.processImage,
         cameraLensDirection: _cameraLensDirection,
         resolution: ResolutionPreset.max,
-        overlayBuilder: (context) => CustomPaint(painter: FaceOverlayPainter(widget.filterModel, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped)),
+        overlayBuilder: (context) { print('overlaybuilder called'); return CustomPaint(painter: FaceOverlayPainter(widget.filterModel, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped)); },
         onResult: (resultFaces) {
           if (resultFaces == null || resultFaces.isEmpty) return;
           widget.filterModel.imageML.faces = resultFaces.toList();
           widget.filterModel.triggerRebuild();
         },
         onDispose: () {
-          cameraMLVisionKey = GlobalKey();
+
         },
       ),
-      ListTile(trailing: RaisedButton.icon(icon: Icon(Icons.sync), label: Text('Flip Camera'), onPressed: flipCameraLens))
+      ListTile(
+          trailing: DescribedFeatureOverlay(
+              featureId: 'flip_camera',
+              tapTarget: Icon(Icons.sync),
+              title: Text('Camera Flip'),
+              description: Text('Flip between your front and back camera'),
+              contentLocation: ContentLocation.below,
+              child: RaisedButton.icon(
+                icon: Icon(Icons.sync),
+                label: Text('Flip Camera'),
+//                onPressed: flipCameraLens,
+                onPressed: () {
+                  FeatureDiscovery.clearPreferences(context, ['add_filter', 'open_image', 'open_camera', 'edit_filter', 'delete_filter', 'flip_camera', 'filter_list']);
+                },
+              )))
     ]);
   }
 
