@@ -7,15 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
-import 'package:flutter_native_image/flutter_native_image.dart';
 
-import 'package:camera/camera.dart';
-
+/// Application documents directory, initialized by main
 Directory mDocsDir;
 
 // General File IO
 String getInternalFilename(String filename) => join(mDocsDir.path, filename);
+
 File getAppFile(String filename) => File(getInternalFilename(filename));
+
 Image getAppFlutterImage(String filename) {
   File file = getAppFile(filename);
   if (!file.existsSync()) return null;
@@ -24,7 +24,7 @@ Image getAppFlutterImage(String filename) {
 
 Future<File> createAppFileFromAssetIfNotExists(String assetFilename) async {
   File file = getAppFile(assetFilename);
-  if (!file.existsSync()){
+  if (!file.existsSync()) {
     ByteData data = await rootBundle.load(assetFilename);
     file.createSync(recursive: true);
     file.writeAsBytesSync(data.buffer.asUint8List());

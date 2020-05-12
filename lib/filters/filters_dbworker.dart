@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
-import 'filter_model.dart';
+import 'filter.dart';
 
 abstract class DBWorker {
   static final DBWorker db = SQFLiteDB._();

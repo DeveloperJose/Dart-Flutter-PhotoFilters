@@ -5,9 +5,10 @@ import 'package:flutter_page_indicator/flutter_page_indicator.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
 import 'package:photofilters/image_utils.dart';
-import 'package:photofilters/ml_utils.dart';
+import 'package:photofilters/ml/image_ml.dart';
 import 'package:scoped_model/scoped_model.dart';
 
+import 'filter.dart';
 import 'filter_model.dart';
 import 'filters_dbworker.dart';
 
@@ -22,18 +23,19 @@ class FilterList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: buildScaffold);
 
-  List<String> example = ['Sharingan', 'Naruto', 'AirPods', 'Amaterasu-ni', 'Dog Ears'];
-
   Scaffold buildScaffold(BuildContext context, Widget child, FilterModel model) => Scaffold(
         floatingActionButton: buildFloatingActionButton(model),
         body: Stack(children: [
-          ImageML.getPreviewWidget(context, model),
+          ImageML.buildPreviewWidget(context, model),
           RaisedButton(
               child: Text('Live or Die'),
-              onPressed: () {
+              onPressed: () async {
                 if (model.imageML.loadType == ImageMLType.MEMORY)
                   model.imageML = ImageML(ImageMLType.ASSET, 'assets/preview.jpg');
-                else
+                else if (model.imageML.loadType == ImageMLType.ASSET) {
+                  await selectImage(context, "temp");
+                  model.imageML = ImageML(ImageMLType.FILE, 'temp');
+                } else
                   model.imageML = ImageML(ImageMLType.MEMORY);
               }),
           Positioned(
@@ -104,10 +106,7 @@ class FilterList extends StatelessWidget {
       ),
       actionPane: SlidableDrawerActionPane(),
       actionExtentRatio: 0.2,
-      secondaryActions: [
-        IconSlideAction(caption: "Delete", color: Colors.red, icon: Icons.delete, onTap: () => deleteFilter(context, filter)),
-        IconSlideAction(caption: 'Edit', color: Colors.blue, icon: Icons.edit, onTap: () => editFilter(model, filter))
-      ],
+      secondaryActions: [IconSlideAction(caption: "Delete", color: Colors.red, icon: Icons.delete, onTap: () => deleteFilter(context, filter)), IconSlideAction(caption: 'Edit', color: Colors.blue, icon: Icons.edit, onTap: () => editFilter(model, filter))],
     );
   }
 

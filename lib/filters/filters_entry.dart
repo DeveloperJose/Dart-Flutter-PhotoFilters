@@ -5,9 +5,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photofilters/filters/filter_model.dart';
 import 'package:photofilters/image_utils.dart';
-import 'package:photofilters/ml_utils.dart';
+import 'package:photofilters/ml/image_ml.dart';
 import 'package:scoped_model/scoped_model.dart';
 
+import 'filter.dart';
 import 'filter_model.dart';
 import 'filters_dbworker.dart';
 
@@ -23,12 +24,13 @@ class FilterEntry extends StatelessWidget {
         }));
   }
 
-  Widget _buildPreview(BuildContext context, FilterModel model) => (model.currentStep >= 1)
-      ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [
-          ImageML.getPreviewWidget(context, model),
-          _buildRefreshPreviewFAB(model),
-        ])
-      : Container();
+  Widget _buildPreview(BuildContext context, FilterModel model) =>
+      (model.currentStep >= 1)
+          ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [
+        ImageML.buildPreviewWidget(context, model),
+        _buildRefreshPreviewFAB(model),
+      ])
+          : Container();
 
   FloatingActionButton _buildRefreshPreviewFAB(FilterModel model) => FloatingActionButton(child: Icon(Icons.refresh), onPressed: () => model.triggerRebuild());
 
@@ -85,7 +87,10 @@ class FilterEntry extends StatelessWidget {
             decimalDigits: 1,
             maxLength: 4,
             initialValue: model.landmarks[type]?.width,
-            onChanged: (value) => model.landmarks[type]?.width = value,
+            onChanged: (value) {
+              print('[Not Saving] Ratio of Width -> Image ${model.imageML.width} to Filter $value');
+              model.landmarks[type]?.width = value;
+            },
           ),
         ),
         Flexible(
@@ -95,7 +100,10 @@ class FilterEntry extends StatelessWidget {
             decimalDigits: 1,
             maxLength: 4,
             initialValue: model.landmarks[type]?.height,
-            onChanged: (value) => model.landmarks[type]?.height = value,
+            onChanged: (value) {
+              print('[Not Saving] Ratio of Height -> Image ${model.imageML.height} to Filter $value');
+              model.landmarks[type]?.height = value;
+            },
           ),
         )
       ])
@@ -124,11 +132,12 @@ class FilterEntry extends StatelessWidget {
       onStepCancel: () {
         if (model.currentStep > 0) model.currentStep--;
       },
-      controlsBuilder: (buildContext, {onStepContinue, onStepCancel}) => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-        FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
-        FlatButton(child: Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
-        RaisedButton(child: (model.currentStep == steps.length - 1) ? Text('Finish and Save') : Text('Next'), onPressed: onStepContinue)
-      ]),
+      controlsBuilder: (buildContext, {onStepContinue, onStepCancel}) =>
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
+            FlatButton(child: Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
+            RaisedButton(child: (model.currentStep == steps.length - 1) ? Text('Finish and Save') : Text('Next'), onPressed: onStepContinue)
+          ]),
     );
   }
 
