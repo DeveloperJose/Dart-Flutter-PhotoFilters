@@ -98,34 +98,28 @@ class FilterListState extends State<FilterList> {
 
   Widget buildFloatingActionButton(BuildContext context, FilterModel model) {
     List<SpeedDialChild> list = [];
-    if (model.imageML.loadType == ImageMLType.LIVE_CAMERA_MEMORY) {
-      var openImageIcon = Icon(Icons.image);
-      var openImageTitle = Text('Open Image From Phone');
-      var openImageDescription = Text('Instead of applying filters to your live camera view apply them to an image from your gallery');
-      var openImageChild = DescribedFeatureOverlay(featureId: 'open_image', child: openImageIcon, tapTarget: openImageIcon, title: openImageTitle, description: openImageDescription, contentLocation: ContentLocation.above);
-
-      list.add(SpeedDialChild(child: openImageChild, label: 'Open image from phone', onTap: () => editImageFromPhone(context, model)));
-    } else {
+    if (model.imageML.loadType == ImageMLType.FILE) {
       var openCameraIcon = Icon(Icons.face);
       var openCameraTitle = Text('Open Live Camera View');
       var openCameraDescription = Text('Switch to the live camera view to apply filters to your face');
       var openCameraChild = DescribedFeatureOverlay(featureId: 'open_camera', child: openCameraIcon, tapTarget: openCameraIcon, title: openCameraTitle, description: openCameraDescription, contentLocation: ContentLocation.above);
 
-      list.add(SpeedDialChild(child: openCameraChild, label: 'Open live camera view', onTap: () => model.imageML = ImageML(ImageMLType.LIVE_CAMERA_MEMORY)));
+      list.add(SpeedDialChild(child: openCameraChild, backgroundColor: Colors.green, label: 'Open live camera view', onTap: () => model.imageML = ImageML(ImageMLType.LIVE_CAMERA_MEMORY)));
     }
 
-    var addFilterIcon = Icon(Icons.library_add);
-    var addFilterTitle = Text('Add A New Filter');
-    var addFilterDescription = Text('Begin the filter creation process here');
-    var addFilterChild = DescribedFeatureOverlay(featureId: 'add_filter', child: addFilterIcon, tapTarget: addFilterIcon, title: addFilterTitle, description: addFilterDescription);
-    list.add(SpeedDialChild(child: addFilterChild, label: 'Add a new filter', onTap: () => editFilter(model, Filter())));
+    var openImageIcon = Icon(Icons.image);
+    var openImageTitle = Text('Open Image From Phone');
+    var openImageDescription = Text('Instead of applying filters to your live camera view apply them to an image from your gallery');
+    var openImageChild = DescribedFeatureOverlay(featureId: 'open_image', child: openImageIcon, tapTarget: openImageIcon, title: openImageTitle, description: openImageDescription, contentLocation: ContentLocation.above);
+
+    list.add(SpeedDialChild(child: openImageChild, backgroundColor: Colors.green, label: 'Open image from phone', onTap: () => editImageFromPhone(context, model)));
 
     if (model.currentPreviewedFilterIndex > 0) {
       var deleteFilterIcon = Icon(Icons.delete);
       var deleteFilterTitle = Text('Delete An Existing Filter');
       var deleteFilterDescription = Text('Delete the currently selected filter from the list of filters');
       var deleteFilterChild = DescribedFeatureOverlay(featureId: 'delete_filter', child: deleteFilterIcon, tapTarget: deleteFilterIcon, title: deleteFilterTitle, description: deleteFilterDescription);
-      list.add(SpeedDialChild(child: deleteFilterChild, label: 'Delete "${model.currentPreviewedFilter?.name}" filter'));
+      list.add(SpeedDialChild(child: deleteFilterChild, backgroundColor: Colors.red, label: 'Delete "${model.currentPreviewedFilter?.name}" filter'));
 
       var editFilterIcon = Icon(Icons.edit);
       var editFilterTitle = Text('Edit An Existing Filter');
@@ -134,12 +128,18 @@ class FilterListState extends State<FilterList> {
       list.add(SpeedDialChild(child: editFilterChild, label: 'Edit "${model.currentPreviewedFilter?.name}" filter'));
     }
 
+    var addFilterIcon = Icon(Icons.library_add);
+    var addFilterTitle = Text('Add A New Filter');
+    var addFilterDescription = Text('Begin the filter creation process here');
+    var addFilterChild = DescribedFeatureOverlay(featureId: 'add_filter', child: addFilterIcon, tapTarget: addFilterIcon, title: addFilterTitle, description: addFilterDescription);
+    list.add(SpeedDialChild(child: addFilterChild, label: 'Add a new filter', onTap: () => editFilter(model, Filter())));
+
     list.add(SpeedDialChild(
         child: Icon(Icons.camera),
+        label: '[Debugging] FeatureDiscovery Clear',
         onTap: () {
-          var list = ['filter_list', 'flip_camera'];
+          var list = ['add_filter', 'open_image', 'open_camera', 'edit_filter', 'delete_filter', 'flip_camera', 'filter_list'];
           FeatureDiscovery.clearPreferences(context, list);
-          FeatureDiscovery.discoverFeatures(context, list);
         }));
 
     var fab = SpeedDial(

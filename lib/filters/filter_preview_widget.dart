@@ -57,15 +57,16 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
         detector: faceDetector.processImage,
         cameraLensDirection: _cameraLensDirection,
         resolution: ResolutionPreset.max,
-        overlayBuilder: (context) { print('overlaybuilder called'); return CustomPaint(painter: FaceOverlayPainter(widget.filterModel, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped)); },
+        overlayBuilder: (context) {
+          print('overlaybuilder called');
+          return CustomPaint(painter: FaceOverlayPainter(widget.filterModel, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped));
+        },
         onResult: (resultFaces) {
           if (resultFaces == null || resultFaces.isEmpty) return;
           widget.filterModel.imageML.faces = resultFaces.toList();
           widget.filterModel.triggerRebuild();
         },
-        onDispose: () {
-
-        },
+        onDispose: () {},
       ),
       ListTile(
           trailing: DescribedFeatureOverlay(
@@ -77,10 +78,7 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
               child: RaisedButton.icon(
                 icon: Icon(Icons.sync),
                 label: Text('Flip Camera'),
-//                onPressed: flipCameraLens,
-                onPressed: () {
-                  FeatureDiscovery.clearPreferences(context, ['add_filter', 'open_image', 'open_camera', 'edit_filter', 'delete_filter', 'flip_camera', 'filter_list']);
-                },
+                onPressed: flipCameraLens,
               )))
     ]);
   }
@@ -129,7 +127,9 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
       return _buildProgressStack('Performing machine learning recognition...', _buildOverlayWidget());
     else if (state == ImageMLLoadState.CLEANING_UP)
       return _buildProgressStack('Cleaning up...', _buildOverlayWidget());
-    else
+    else {
+      widget.filterModel.triggerRebuild();
       return _buildOverlayWidget();
+    }
   }
 }
