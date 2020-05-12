@@ -1,5 +1,9 @@
+import 'dart:ui' as ui;
+
+import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../image_utils.dart';
 import 'filter.dart';
 
 abstract class DBWorker {
@@ -17,6 +21,7 @@ abstract class DBWorker {
 }
 
 class SQFLiteDB extends DBWorker {
+  static const SEPARATOR = '|';
   static const String DB_NAME = 'filters.db';
   static const String TBL_NAME = 'filters';
   static const String KEY_ID = 'id';
@@ -28,17 +33,6 @@ class SQFLiteDB extends DBWorker {
   Database _db;
 
   SQFLiteDB._();
-
-  /// Loads grocery information from a database map
-  Future<Filter> _fromMap(Map<String, dynamic> map) async => Filter.fromDatabase(map[KEY_ID], map[KEY_FILTER_NAME], map[KEY_LANDMARKS], map[KEY_WIDTHS], map[KEY_HEIGHTS]);
-
-  /// Converts grocery information into a mappable format
-  Map<String, dynamic> _toMap(Filter filter) => Map<String, dynamic>()
-    ..[KEY_ID] = filter.id
-    ..[KEY_FILTER_NAME] = filter.name
-    ..[KEY_LANDMARKS] = filter.dbLandmarks
-    ..[KEY_WIDTHS] = filter.dbWidths
-    ..[KEY_HEIGHTS] = filter.dbHeights;
 
   Future<Database> get database async => _db ??= await _init();
 
@@ -68,11 +62,12 @@ class SQFLiteDB extends DBWorker {
   @override
   Future<int> create(Filter filter) async {
     Database db = await database;
-    print('db_create(): ${filter.name}, ${filter.dbLandmarks}, ${filter.dbWidths}, ${filter.dbHeights}');
+    var map = _toMap(filter);
+    print('db_create(); $map');
     return await db.rawInsert(
         "INSERT INTO $TBL_NAME ($KEY_FILTER_NAME, $KEY_LANDMARKS, $KEY_WIDTHS, $KEY_HEIGHTS) "
         "VALUES (?, ?, ?, ?)",
-        [filter.name, filter.dbLandmarks, filter.dbWidths, filter.dbHeights]);
+        [map[KEY_FILTER_NAME], map[KEY_LANDMARKS], map[KEY_WIDTHS], map[KEY_HEIGHTS]]);
   }
 
   @override
@@ -85,7 +80,6 @@ class SQFLiteDB extends DBWorker {
   Future<Filter> get(int id) async {
     Database db = await database;
     var values = await db.query(TBL_NAME, where: "$KEY_ID = ?", whereArgs: [id]);
-    print('db_get(): $values');
     return values.isEmpty ? null : _fromMap(values.first);
   }
 
@@ -102,4 +96,36 @@ class SQFLiteDB extends DBWorker {
     Database db = await database;
     return await db.update(TBL_NAME, _toMap(filter), where: "$KEY_ID = ?", whereArgs: [filter.id]);
   }
+
+  /// Loads filter information from a database map
+  Future<Filter> _fromMap(Map<String, dynamic> map) async {
+    Filter filter = Filter(map[KEY_ID], map[KEY_FILTER_NAME]);
+
+    List<String> landmarkSplit = map[KEY_LANDMARKS].split(SEPARATOR);
+    List<String> widthSplit = map[KEY_WIDTHS].split(SEPARATOR);
+    List<String> heightSplit = map[KEY_HEIGHTS].split(SEPARATOR);
+    if (landmarkSplit.length == 0) return null;
+
+    for (int i = 0; i < landmarkSplit.length; i++) {
+      // String to Enum
+      FaceLandmarkType landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
+
+      // Prepare FilterInfo members
+      String filename = getLandmarkFilename(filter.name, landmarkType);
+      double width = double.tryParse(widthSplit[i]);
+      double height = double.tryParse(heightSplit[i]);
+      ui.Image dartImage = await getAppDartImage(filename);
+
+      filter.landmarks[landmarkType] = FilterInfo(filename, dartImage, width, height);
+    }
+    return filter;
+  }
+
+  /// Converts filter information into a mappable format
+  Map<String, dynamic> _toMap(Filter filter) => Map<String, dynamic>()
+    ..[KEY_ID] = filter.id
+    ..[KEY_FILTER_NAME] = filter.name
+    ..[KEY_LANDMARKS] = filter.landmarks.keys.map((landmark) => landmark.toString()).join(SEPARATOR)
+    ..[KEY_WIDTHS] = filter.landmarks.values.map((filterInfo) => filterInfo.width).join(SEPARATOR)
+    ..[KEY_HEIGHTS] = filter.landmarks.values.map((filterInfo) => filterInfo.height).join(SEPARATOR);
 }

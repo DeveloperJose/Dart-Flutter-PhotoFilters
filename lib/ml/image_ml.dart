@@ -4,18 +4,14 @@ import 'dart:ui' as ui;
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
-import 'package:photofilters/filters/filter_model.dart';
 
 import '../image_utils.dart';
-import 'face_overlay_painter.dart';
 import 'firebase_utils.dart';
 
-/// We keep track of this so we don't make multiples in the widget tree
-/// That would cause the widget to refresh constantly
-final GlobalKey<CameraMlVisionState> _cameraMLVisionKey = GlobalKey();
+/// The different ways an ImageML can be loaded
+enum ImageMLType { LIVE_CAMERA_MEMORY, FILE, ASSET }
 
-enum ImageMLType { MEMORY, FILE, ASSET }
+enum ImageMLLoadState { START, LOADING_ASSET, LOADING_IMAGE, LOADING_IMAGE_INFO, PERFORMING_ML, CLEANING_UP, FINISHED }
 
 class ImageML {
   /// How this image needs to be loaded or was loaded
@@ -47,96 +43,42 @@ class ImageML {
   Size get size => Size(width, height);
 
   ImageML(this.loadType, [this.filename]) {
-    isLoaded = loadType == ImageMLType.MEMORY;
+    isLoaded = loadType == ImageMLType.LIVE_CAMERA_MEMORY;
   }
 
-  /// Builds the custom painter widget which draws all our filter effects onto the canvas
-  Widget buildOverlayWidget(FaceOverlayPainter overlayPainter) {
-    return FittedBox(
-      fit: BoxFit.contain,
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: CustomPaint(painter: overlayPainter),
-      ),
-    );
+  Stream<ImageMLLoadState> load() async* {
+    if (loadType == ImageMLType.ASSET)
+      yield* _loadAsset();
+    else if (loadType == ImageMLType.FILE) yield* _loadFile();
   }
 
-  Widget _buildProgressStack(String progressText, [Widget backgroundWidget]) {
-    if (backgroundWidget == null) backgroundWidget = Container();
-    return Stack(alignment: AlignmentDirectional.center, children: [backgroundWidget, Text(progressText), Positioned(child: CircularProgressIndicator())]);
-  }
-
-  Stream<Widget> _loadFile(FaceOverlayPainter overlayPainter) async* {
-    yield _buildProgressStack('Loading image...');
+  Stream<ImageMLLoadState> _loadFile() async* {
+    yield ImageMLLoadState.LOADING_IMAGE;
     this.flutterImage = getAppFlutterImage(filename);
 
-    yield _buildProgressStack('Loading image dimensions and information...', flutterImage);
+    yield ImageMLLoadState.LOADING_IMAGE_INFO;
     this.dartImage = await getAppDartImage(filename);
 
-    yield _buildProgressStack('Performing machine learning recognition...', buildOverlayWidget(overlayPainter));
+    yield ImageMLLoadState.PERFORMING_ML;
     var firebaseImage = getAppFirebaseImage(filename);
     this.faces = await faceDetector.processImage(firebaseImage);
 
-    yield buildOverlayWidget(overlayPainter);
     isLoaded = true;
+    yield ImageMLLoadState.FINISHED;
   }
 
-  Stream<Widget> _loadAsset(FaceOverlayPainter overlayPainter) async* {
+  Stream<ImageMLLoadState> _loadAsset() async* {
     // Save image temporarily into a file
-    yield _buildProgressStack('Loading asset from app...');
+    yield ImageMLLoadState.LOADING_ASSET;
     File tempFile = await createAppFileFromAssetIfNotExists(filename);
 
     // Load from file
-    yield* _loadFile(overlayPainter);
+    yield* _loadFile();
 
     // Remove temp file
-    yield _buildProgressStack('Cleaning up...', buildOverlayWidget(overlayPainter));
+    yield ImageMLLoadState.CLEANING_UP;
     tempFile.delete();
 
-    yield buildOverlayWidget(overlayPainter);
-    isLoaded = true;
-  }
-
-  static Widget buildPreviewWidget(BuildContext context, FilterModel model) {
-    if (model.imageML == null)
-      return Center(child: Text('Error: Cannot load preview widget'));
-    else if (model.imageML.loadType == ImageMLType.MEMORY)
-      return _buildLivePreviewWidget(model);
-    else
-      return _buildImagePreviewWidget(model);
-  }
-
-  static Widget _buildImagePreviewWidget(FilterModel model) {
-    // Show if loaded. If not loaded, load asynchronously so the user doesn't get impacted
-    var overlayPainter = FaceOverlayPainter(model);
-    if (model.imageML.isLoaded)
-      return model.imageML.buildOverlayWidget(overlayPainter);
-    else
-      return StreamBuilder<Widget>(
-        initialData: Container(),
-        stream: (model.imageML.loadType == ImageMLType.FILE) ? model.imageML._loadFile(overlayPainter) : model.imageML._loadAsset(overlayPainter),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) model.triggerRebuild();
-          return snapshot.data;
-        },
-      );
-  }
-
-  static Widget _buildLivePreviewWidget(FilterModel model) {
-    return CameraMlVision<List<Face>>(
-      key: _cameraMLVisionKey,
-      detector: faceDetector.processImage,
-      cameraLensDirection: model.cameraLensDirection,
-      resolution: ResolutionPreset.max,
-      overlayBuilder: (context) {
-        return CustomPaint(painter: FaceOverlayPainter(model, _cameraMLVisionKey.currentState.cameraValue.previewSize.flipped));
-      },
-      onResult: (resultFaces) {
-        if (resultFaces == null || resultFaces.isEmpty) return;
-        model.imageML.faces = resultFaces.toList();
-        model.triggerRebuild();
-      },
-    );
+    yield ImageMLLoadState.FINISHED;
   }
 }

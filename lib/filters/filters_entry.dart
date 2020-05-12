@@ -4,8 +4,8 @@ import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:photofilters/filters/filter_model.dart';
+import 'package:photofilters/filters/filter_preview_widget.dart';
 import 'package:photofilters/image_utils.dart';
-import 'package:photofilters/ml/image_ml.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 import 'filter.dart';
@@ -16,21 +16,16 @@ class FilterEntry extends StatelessWidget {
   final GlobalKey<FormState> _formKey = GlobalKey();
 
   @override
-  Widget build(BuildContext context) {
-    return ScopedModel<FilterModel>(
-        model: filtersModel,
-        child: ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-          return Scaffold(body: Form(key: _formKey, child: Column(children: [_buildPreview(context, model), Expanded(child: _buildLandmarkStepper(context, model))])));
-        }));
-  }
+  Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
+        return Scaffold(body: Form(key: _formKey, child: Column(children: [_buildPreview(context, model), Expanded(child: _buildLandmarkStepper(context, model))])));
+      });
 
-  Widget _buildPreview(BuildContext context, FilterModel model) =>
-      (model.currentStep >= 1)
-          ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [
-        ImageML.buildPreviewWidget(context, model),
-        _buildRefreshPreviewFAB(model),
-      ])
-          : Container();
+  Widget _buildPreview(BuildContext context, FilterModel model) => (model.currentStep >= 1)
+      ? Stack(alignment: AlignmentDirectional.bottomEnd, children: [
+          FilterPreviewWidget(filterModel: model),
+          _buildRefreshPreviewFAB(model),
+        ])
+      : Container();
 
   FloatingActionButton _buildRefreshPreviewFAB(FilterModel model) => FloatingActionButton(child: Icon(Icons.refresh), onPressed: () => model.triggerRebuild());
 
@@ -132,21 +127,31 @@ class FilterEntry extends StatelessWidget {
       onStepCancel: () {
         if (model.currentStep > 0) model.currentStep--;
       },
-      controlsBuilder: (buildContext, {onStepContinue, onStepCancel}) =>
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
-            FlatButton(child: Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
-            RaisedButton(child: (model.currentStep == steps.length - 1) ? Text('Finish and Save') : Text('Next'), onPressed: onStepContinue)
-          ]),
+      controlsBuilder: (buildContext, {onStepContinue, onStepCancel}) => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+        FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
+        FlatButton(child: Text('Previous'), onPressed: (model.currentStep > 0) ? onStepCancel : null),
+        RaisedButton(child: (model.currentStep == steps.length - 1) ? Text('Finish and Save') : Text('Next'), onPressed: onStepContinue)
+      ]),
     );
   }
 
-  void cancelEntry(BuildContext context, FilterModel model) {
-    model.clear();
+  void returnToFilterList(BuildContext context, FilterModel model) {
     clearTemporaryFiles();
+
+    // TODO: Remove FAStepper
+    model.currentStep = 0;
+
+    model.currentPreviewedFilterIndex = 0;
+    model.landmarks.clear();
+    model.imageML = model.imageMLEdit;
+    model.imageMLEdit = null;
 
     FocusScope.of(context).requestFocus(FocusNode());
     model.setStackIndex(0);
+  }
+
+  void cancelEntry(BuildContext context, FilterModel model) {
+    returnToFilterList(context, model);
   }
 
   void saveEntry(BuildContext context, FilterModel model) async {
@@ -161,7 +166,6 @@ class FilterEntry extends StatelessWidget {
       }
     });
 
-    clearTemporaryFiles();
     print('Saved $count landmarks from the entity being edited under the name ${model.entityBeingEdited.name}');
 
     // Update entity
@@ -175,12 +179,8 @@ class FilterEntry extends StatelessWidget {
     }
     model.loadData(DBWorker.db);
 
-    // Clear model
-    model.clear();
-
-    // Go back to list
-    model.setStackIndex(0);
     Scaffold.of(context).showSnackBar(SnackBar(backgroundColor: Colors.green, duration: Duration(seconds: 2), content: Text('Filter saved!')));
+    returnToFilterList(context, model);
   }
 
   void clearTemporaryFiles() {

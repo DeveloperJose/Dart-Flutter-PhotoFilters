@@ -39,34 +39,4 @@ class Filter {
   String toString() {
     return "Filter.toString(): ID=$id, Name=$name, Landmark Keys=${landmarks.keys.length}";
   }
-
-  /// Database helper methods
-  String get dbLandmarks => landmarks.keys.map((landmark) => landmark.toString()).join(',');
-
-  String get dbWidths => landmarks.values.map((filterInfo) => filterInfo.width).join(',');
-
-  String get dbHeights => landmarks.values.map((filterInfo) => filterInfo.height).join(',');
-
-  static Future<Filter> fromDatabase(int id, String filterName, String landmarkStr, String widthStr, String heightStr) async {
-    Filter result = Filter(id, filterName);
-
-    List<String> landmarkSplit = landmarkStr.split(',');
-    List<String> widthSplit = widthStr.split(',');
-    List<String> heightSplit = heightStr.split(',');
-    if (landmarkSplit.length == 0) return null;
-
-    for (int i = 0; i < landmarkSplit.length; i++) {
-      // String to Enum
-      FaceLandmarkType landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
-
-      // Prepare FilterInfo members
-      String filename = getLandmarkFilename(filterName, landmarkType);
-      double width = double.tryParse(widthSplit[i]);
-      double height = double.tryParse(heightSplit[i]);
-      ui.Image dartImage = await getAppDartImage(filename);
-
-      result.landmarks[landmarkType] = FilterInfo(filename, dartImage, width, height);
-    }
-    return result;
-  }
 }

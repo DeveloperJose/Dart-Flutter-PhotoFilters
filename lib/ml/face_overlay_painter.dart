@@ -7,7 +7,7 @@ import 'package:photofilters/filters/filter_model.dart';
 /// Modified from the example provided by the library
 /// https://github.com/rushio-consulting/flutter_camera_ml_vision/blob/master/example/lib/main_face.dartclass FaceOverlayPainter extends CustomPainter {
 class FaceOverlayPainter extends CustomPainter {
-  final FilterModel model;
+  FilterModel model;
   Size imageSize;
 
   FaceOverlayPainter(this.model, [this.imageSize]);
@@ -29,8 +29,6 @@ class FaceOverlayPainter extends CustomPainter {
         ..color = Colors.amber;
       canvas.drawRect(faceBoundingRect, faceBoundingPaint);
 
-      print('Face width? : ${faceBoundingRect.width}');
-
       // TODO: Debugging contours
       var debugContour = face.getContour(FaceContourType.face);
       if (debugContour != null) {
@@ -46,8 +44,8 @@ class FaceOverlayPainter extends CustomPainter {
         if (faceLandmark == null || filter.dartImage == null) return;
 
         // Scale filter size relative to face width (can also be image width)
-        double filterScaleX = filter.width / faceBoundingRect.width;
-        double filterScaleY = filter.height / faceBoundingRect.height;
+        double filterScaleX = filter.width ?? 0 / faceBoundingRect.width;
+        double filterScaleY = filter.height ?? 0 / faceBoundingRect.height;
         Rect resizedFilterRect = Rect.fromCenter(center: faceLandmark.position, width: filter.width * filterScaleX, height: filter.height * filterScaleY);
 
         // Scale relative to widget size
@@ -66,9 +64,8 @@ class FaceOverlayPainter extends CustomPainter {
 
   Rect _transformRect(Rect rect, Size widgetSize) {
     // Reflect image if we are using a live camera and it's the back camera
-//    bool reflection = model.imageML.loadType == ImageMLType.MEMORY ? (model.cameraLensDirection == CameraLensDirection.front) : false;
+    // bool reflection = model.imageML.loadType == ImageMLType.MEMORY ? (model.cameraLensDirection == CameraLensDirection.front) : false;
     bool reflection = false;
-    print('Reflection: $reflection');
     var reflectRect = _reflectionRect(reflection, rect, widgetSize.width);
     var scaledRect = _scaleRect(reflectRect, widgetSize);
     return scaledRect;
