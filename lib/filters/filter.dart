@@ -12,6 +12,10 @@ class FilterInfo {
   double width;
   double height;
 
+  double get maxWidth => dartImage.width.toDouble();
+
+  double get maxHeight => dartImage.height.toDouble();
+
   Size get size => Size(width, height);
 
   FilterInfo(this.imageFilename, this.dartImage, this.width, this.height);

@@ -11,6 +11,16 @@ import 'package:path/path.dart';
 /// Application documents directory, initialized by main
 Directory mDocsDir;
 
+void clearTemporaryFiles() {
+  var tempFile = getAppFile('temp');
+  if (tempFile.existsSync()) tempFile.deleteSync(recursive: true);
+
+  FaceLandmarkType.values.forEach((type) {
+    var tempLandmarkFile = getAppFile(getLandmarkFilename('temp', type));
+    if (tempLandmarkFile.existsSync()) tempLandmarkFile.deleteSync(recursive: true);
+  });
+}
+
 // General File IO
 String getInternalFilename(String filename) => join(mDocsDir.path, filename);
 

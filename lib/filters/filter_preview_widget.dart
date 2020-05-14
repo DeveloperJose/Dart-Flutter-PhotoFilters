@@ -25,15 +25,15 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
   GlobalKey<CameraMlVisionState> cameraMLVisionKey = GlobalKey();
 
   /// The direction of the camera lens. Specifies which camera to use for the preview.
-  CameraLensDirection _cameraLensDirection = CameraLensDirection.front;
+  CameraLensDirection cameraLensDirection = CameraLensDirection.front;
 
   /// Flips the camera
   void flipCameraLens() {
     setState(() {
-      if (_cameraLensDirection == CameraLensDirection.front)
-        _cameraLensDirection = CameraLensDirection.back;
+      if (cameraLensDirection == CameraLensDirection.front)
+        cameraLensDirection = CameraLensDirection.back;
       else
-        _cameraLensDirection = CameraLensDirection.front;
+        cameraLensDirection = CameraLensDirection.front;
 
       cameraMLVisionKey = GlobalKey();
     });
@@ -44,21 +44,20 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
     if (widget.filterModel?.imageML == null)
       return Center(child: Text('Error: Could not load preview widget.'));
     else if (widget.filterModel.imageML.loadType == ImageMLType.LIVE_CAMERA_MEMORY)
-      return buildLivePreviewWidget();
+      return _buildLivePreviewWidget();
     else
-      return buildImagePreviewWidget();
+      return _buildImagePreviewWidget();
   }
 
   /// Builds the live camera preview widget
-  Widget buildLivePreviewWidget() {
+  Widget _buildLivePreviewWidget() {
     return Stack(children: [
       CameraMlVision<List<Face>>(
         key: cameraMLVisionKey,
         detector: faceDetector.processImage,
-        cameraLensDirection: _cameraLensDirection,
+        cameraLensDirection: cameraLensDirection,
         resolution: ResolutionPreset.max,
         overlayBuilder: (context) {
-          print('overlaybuilder called');
           return CustomPaint(painter: FaceOverlayPainter(widget.filterModel, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped));
         },
         onResult: (resultFaces) {
@@ -85,7 +84,7 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
 
   /// Builds the image preview widget using a still image
   /// If the image has not already been loaded, loads it asynchronously so the user doesn't get impacted
-  Widget buildImagePreviewWidget() {
+  Widget _buildImagePreviewWidget() {
     if (widget.filterModel.imageML.isLoaded)
       return _buildOverlayWidget();
     else

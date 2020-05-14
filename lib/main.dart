@@ -1,4 +1,5 @@
 import 'package:feature_discovery/feature_discovery.dart';
+import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:path_provider/path_provider.dart';
@@ -6,7 +7,7 @@ import 'package:scoped_model/scoped_model.dart';
 
 import 'filters/filter_model.dart';
 import 'filters/filters_dbworker.dart';
-import 'filters/filters_entry.dart';
+import 'filters/entry/filters_entry.dart';
 import 'filters/filters_list.dart';
 import 'image_utils.dart';
 import 'ml/firebase_utils.dart';
@@ -14,10 +15,7 @@ import 'ml/image_ml.dart';
 
 FilterModel mainFilterModel = FilterModel();
 
-void clearTemporaryFiles() {
-  var tempFile = getAppFile('temp');
-  if (tempFile.existsSync()) tempFile.deleteSync(recursive: true);
-}
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +49,7 @@ class MyAppState extends State<MyApp> {
             home: Scaffold(
               appBar: AppBar(title: Text('PhotoFilters by Jose G. Perez')),
               body: buildScopedModel(),
+              resizeToAvoidBottomPadding: false,
             )));
   }
 

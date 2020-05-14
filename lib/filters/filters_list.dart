@@ -28,6 +28,8 @@ class FilterListState extends State<FilterList> {
     ..color = Colors.deepPurple
     ..style = PaintingStyle.stroke;
 
+  int currentPreviewedFilterIndex;
+
   @override
   void initState() {
     SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
@@ -44,6 +46,7 @@ class FilterListState extends State<FilterList> {
 
   Scaffold buildScaffold(BuildContext context, Widget child, FilterModel model) {
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       floatingActionButton: buildFloatingActionButton(context, model),
       body: Stack(children: [FilterPreviewWidget(filterModel: model), Positioned(bottom: 10, right: 0, child: _buildList(context, model))]),
     );
@@ -67,9 +70,9 @@ class FilterListState extends State<FilterList> {
                     scale: 0.1,
                     indicatorLayout: PageIndicatorLayout.SLIDE,
                     pagination: new SwiperPagination(margin: EdgeInsets.zero, builder: SwiperPagination.dots),
-                    index: model.currentPreviewedFilterIndex,
+                    index: currentPreviewedFilterIndex,
                     onIndexChanged: (index) {
-                      model.currentPreviewedFilterIndex = index;
+                      setState(() => currentPreviewedFilterIndex = index);
                       model.landmarks = model.entityList[index].landmarks;
                       model.triggerRebuild();
                     },
@@ -97,6 +100,7 @@ class FilterListState extends State<FilterList> {
       ]);
 
   Widget buildFloatingActionButton(BuildContext context, FilterModel model) {
+    var currentPreviewedFilter = model.entityList[currentPreviewedFilterIndex];
     List<SpeedDialChild> list = [];
     if (model.imageML.loadType == ImageMLType.FILE) {
       var openCameraIcon = Icon(Icons.face);
@@ -114,18 +118,18 @@ class FilterListState extends State<FilterList> {
 
     list.add(SpeedDialChild(child: openImageChild, backgroundColor: Colors.green, label: 'Open image from phone', onTap: () => editImageFromPhone(context, model)));
 
-    if (model.currentPreviewedFilterIndex > 0) {
+    if (currentPreviewedFilterIndex > 0) {
       var deleteFilterIcon = Icon(Icons.delete);
       var deleteFilterTitle = Text('Delete An Existing Filter');
       var deleteFilterDescription = Text('Delete the currently selected filter from the list of filters');
       var deleteFilterChild = DescribedFeatureOverlay(featureId: 'delete_filter', child: deleteFilterIcon, tapTarget: deleteFilterIcon, title: deleteFilterTitle, description: deleteFilterDescription);
-      list.add(SpeedDialChild(child: deleteFilterChild, backgroundColor: Colors.red, label: 'Delete "${model.currentPreviewedFilter?.name}" filter'));
+      list.add(SpeedDialChild(child: deleteFilterChild, backgroundColor: Colors.red, label: 'Delete "${currentPreviewedFilter?.name}" filter'));
 
       var editFilterIcon = Icon(Icons.edit);
       var editFilterTitle = Text('Edit An Existing Filter');
       var editFilterDescription = Text('Edit the currently selected filter using the creation wizard again');
       var editFilterChild = DescribedFeatureOverlay(featureId: 'edit_filter', child: editFilterIcon, tapTarget: editFilterIcon, title: editFilterTitle, description: editFilterDescription);
-      list.add(SpeedDialChild(child: editFilterChild, label: 'Edit "${model.currentPreviewedFilter?.name}" filter'));
+      list.add(SpeedDialChild(child: editFilterChild, label: 'Edit "${currentPreviewedFilter?.name}" filter'));
     }
 
     var addFilterIcon = Icon(Icons.library_add);
@@ -164,16 +168,13 @@ class FilterListState extends State<FilterList> {
     else
       model.entityBeingEdited = filter;
 
-    // TODO: Replace FAStepper
-    model.currentPreviewedFilterIndex = 0;
-
     model.landmarks = filter.landmarks;
     model.imageMLEdit = model.imageML;
     model.imageML = ImageML(ImageMLType.ASSET, 'assets/preview.jpg');
     model.setStackIndex(1);
   }
 
-  void _deleteFilter(FilterModel model, Filter filter) async {
+  void deleteFilter(FilterModel model, Filter filter) async {
     // Delete from DB
     await DBWorker.db.delete(filter.id);
 
@@ -185,7 +186,6 @@ class FilterListState extends State<FilterList> {
 
     // Reload DB and refresh filter list
     model.loadData(DBWorker.db);
-    model.currentPreviewedFilterIndex = 0;
     model.landmarks.clear();
   }
 
@@ -199,7 +199,7 @@ class FilterListState extends State<FilterList> {
             FlatButton(
               child: Text('Delete'),
               onPressed: () {
-                _deleteFilter(model, filter);
+                deleteFilter(model, filter);
                 Navigator.of(context).pop();
                 Scaffold.of(context).showSnackBar(SnackBar(
                   backgroundColor: Colors.red,
