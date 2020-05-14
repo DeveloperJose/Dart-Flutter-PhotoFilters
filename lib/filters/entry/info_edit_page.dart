@@ -35,7 +35,7 @@ class InfoEditPageState extends State<InfoEditPage> {
     return FormBuilderTextField(
       attribute: 'name',
       decoration: InputDecoration(labelText: 'Name of the filter'),
-      initialValue: (model.entityBeingEdited != null) ? model.entityBeingEdited.name : '',
+      initialValue: (model.entityBeingEdited != null) ? model.entityBeingEdited.name : null,
       validators: [FormBuilderValidators.required(errorText: 'Please type a filter name')],
       onChanged: (value) => model.entityBeingEdited.name = value,
     );

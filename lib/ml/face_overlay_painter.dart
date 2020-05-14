@@ -6,7 +6,7 @@ import 'package:photofilters/filters/filter_model.dart';
 
 /// A CustomPainter that overlays things on top of images based on Firebase ML face detectors
 /// Modified from the example provided by the library
-/// https://github.com/rushio-consulting/flutter_camera_ml_vision/blob/master/example/lib/main_face.dartclass FaceOverlayPainter extends CustomPainter {
+/// https://github.com/rushio-consulting/flutter_camera_ml_vision/blob/master/example/lib/main_face.dartclass
 class FaceOverlayPainter extends CustomPainter {
   /// The filter we are overlaying on top of an image
   FilterModel model;

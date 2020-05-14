@@ -1,8 +1,12 @@
+import 'dart:ui' as ui;
+
 import 'package:feature_discovery/feature_discovery.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:photofilters/ml/face_overlay_painter.dart';
 import 'package:photofilters/ml/firebase_utils.dart';
 import 'package:photofilters/ml/image_ml.dart';
@@ -43,12 +47,33 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.filterModel?.imageML == null)
-      return Center(child: Text('Error: Could not load preview widget.'));
-    else if (widget.filterModel.imageML.loadType == ImageMLType.LIVE_CAMERA_MEMORY)
-      return _buildLivePreviewWidget();
-    else
-      return _buildImagePreviewWidget();
+    if (widget.filterModel?.imageML == null) return Center(child: Text('Error: Could not load preview widget.'));
+
+    return Stack(children: [
+      widget.filterModel.imageML.loadType == ImageMLType.LIVE_CAMERA_MEMORY ? _buildLivePreviewWidget() : _buildImagePreviewWidget(),
+      RaisedButton(
+          child: Text('Save'),
+          onPressed: () async {
+            // Code copied and modified from https://github.com/vemarav/signature/blob/master/lib/main.dart and https://github.com/rxlabz/flutter_canvas_to_image
+            ui.PictureRecorder recorder = ui.PictureRecorder();
+            Canvas canvas = Canvas(recorder);
+            FaceOverlayPainter painter = FaceOverlayPainter(widget.filterModel);
+            painter.paint(canvas, context.size);
+
+            ui.Image im = await recorder.endRecording().toImage(context.size.width.floor(), context.size.height.floor());
+            var byteData = await im.toByteData(format: ui.ImageByteFormat.png);
+            var imageBytes = byteData.buffer.asUint8List();
+            print('Bytes: $imageBytes');
+            var permResult = await Permission.storage.request();
+            if (permResult.isGranted) {
+              await ImageGallerySaver.saveImage(imageBytes);
+              Scaffold.of(context).showSnackBar(SnackBar(content: Text('Image saved to gallery!'), duration: Duration(seconds: 5), backgroundColor: Colors.green));
+            }
+            else {
+              Scaffold.of(context).showSnackBar(SnackBar(content: Text('Could not save image due to denied permissions'), duration: Duration(seconds: 5), backgroundColor: Colors.red));
+            }
+          }),
+    ]);
   }
 
   /// Builds the live camera preview widget
@@ -68,8 +93,10 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
         },
         onDispose: () {},
       ),
-      ListTile(
-          trailing: DescribedFeatureOverlay(
+      Positioned(
+          top: 0,
+          right: 0,
+          child: DescribedFeatureOverlay(
               featureId: 'flip_camera',
               tapTarget: Icon(Icons.sync),
               title: Text('Camera Flip'),
