@@ -17,7 +17,7 @@ class FilterEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-        return Scaffold(body: Form(key: _formKey, child: Column(children: [_buildPreview(context, model), Expanded(child: _buildLandmarkStepper(context, model))])));
+        return Scaffold(appBar: AppBar(title: Text('Filters_Entry')), body: Form(key: _formKey, child: Column(children: [_buildPreview(context, model), Expanded(child: _buildLandmarkStepper(context, model))])));
       });
 
   Widget _buildPreview(BuildContext context, FilterModel model) => (model.currentStep >= 1)
