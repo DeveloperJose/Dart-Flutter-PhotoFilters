@@ -28,7 +28,7 @@ class FilterListState extends State<FilterList> {
     ..color = Colors.deepPurple
     ..style = PaintingStyle.stroke;
 
-  int currentPreviewedFilterIndex;
+  int currentPreviewedFilterIndex = 0;
 
   @override
   void initState() {

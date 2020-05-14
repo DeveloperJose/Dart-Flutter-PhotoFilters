@@ -54,10 +54,19 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
   }
 
   Widget _buildLandmarkSelector(FilterModel model) {
+    var landmarkOptions = FaceLandmarkType.values.map((landmarkType) {
+      String landmarkText = landmarkToNiceString(landmarkType);
+
+      bool modifiedBefore = model.landmarks[landmarkType] != null;
+      if (modifiedBefore)
+        landmarkText += '*';
+
+      return FormBuilderFieldOption(value: landmarkType, child: Text(landmarkText));
+    }).toList();
     return FormBuilderChoiceChip(
       attribute: 'landmark',
       decoration: InputDecoration(labelText: 'Select a facial landmark to edit'),
-      options: FaceLandmarkType.values.map((landmarkType) => FormBuilderFieldOption(value: landmarkType, child: Text(landmarkToNiceString(landmarkType)))).toList(),
+      options: landmarkOptions,
       onChanged: (landmarkType) => setState(() {
         // Update landmark
         currentLandmarkBeingEdited = landmarkType;
