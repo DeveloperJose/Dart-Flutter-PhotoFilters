@@ -4,12 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:photofilters/filters/filter.dart';
 import 'package:photofilters/filters/filter_model.dart';
 
+/// A CustomPainter that overlays things on top of images based on Firebase ML face detectors
 /// Modified from the example provided by the library
 /// https://github.com/rushio-consulting/flutter_camera_ml_vision/blob/master/example/lib/main_face.dartclass FaceOverlayPainter extends CustomPainter {
 class FaceOverlayPainter extends CustomPainter {
+  /// The filter we are overlaying on top of an image
   FilterModel model;
+
+  /// The size of the image we are overlaying on top of
   Size imageSize;
 
+  /// Constructs the overlay painter
   FaceOverlayPainter(this.model, [this.imageSize]);
 
   @override
@@ -62,6 +67,7 @@ class FaceOverlayPainter extends CustomPainter {
     return true;
   }
 
+  /// Reflects and scales rectangles to appropriate sizes given the image and widget size proportions
   Rect _transformRect(Rect rect, Size widgetSize) {
     // Reflect image if we are using a live camera and it's the back camera
     // bool reflection = model.imageML.loadType == ImageMLType.MEMORY ? (model.cameraLensDirection == CameraLensDirection.front) : false;
@@ -71,6 +77,7 @@ class FaceOverlayPainter extends CustomPainter {
     return scaledRect;
   }
 
+  /// Reflects a given rectangle if needed
   Rect _reflectionRect(bool reflection, Rect boundingBox, double width) {
     if (!reflection) return boundingBox;
 
@@ -81,6 +88,7 @@ class FaceOverlayPainter extends CustomPainter {
     return Rect.fromLTRB(left, boundingBox.top, right, boundingBox.bottom);
   }
 
+  /// Scales a given rectangle to an appropriate size given the image and widget size proportions
   Rect _scaleRect(Rect rect, Size widgetSize) {
     final scaleX = widgetSize.width / imageSize.width;
     final scaleY = widgetSize.height / imageSize.height;

@@ -9,20 +9,27 @@ import 'package:sqflite/sqflite.dart';
 import '../image_utils.dart';
 import 'filter.dart';
 
+/// A database used to store filter information
 abstract class DBWorker {
   static final DBWorker db = SQFLiteDB._();
 
+  /// Creates an entry in the DB for a given filter
   Future<int> create(Filter filter);
 
+  /// Updates an entry in the DB for a given filter
   Future<void> update(Filter filter);
 
+  /// Deletes the given filter from the DB given the ID
   Future<void> delete(int id);
 
+  /// Gets a filter from the DB given the ID
   Future<Filter> get(int id);
 
+  /// Gets all filters from the DB
   Future<List<Filter>> getAll();
 }
 
+/// An implementation of a database using SQFLite for local storage
 class SQFLiteDB extends DBWorker {
   static const SEPARATOR = '|';
   static const String DB_NAME = 'filters.db';
@@ -61,16 +68,13 @@ class SQFLiteDB extends DBWorker {
 
   Future<void> upgradeTable() async {
     await _db.execute('DROP TABLE IF EXISTS $TBL_NAME');
-    print('Dropped database table');
     await createTable(_db);
-    print('Created new database table');
   }
 
   @override
   Future<int> create(Filter filter) async {
     Database db = await database;
     var map = _toMap(filter);
-    print('db_create(); $map');
     return await db.rawInsert(
         "INSERT INTO $TBL_NAME ($KEY_FILTER_NAME, $KEY_ICON, $KEY_LANDMARKS, $KEY_WIDTHS, $KEY_HEIGHTS) "
         "VALUES (?, ?, ?, ?, ?)",
@@ -94,7 +98,6 @@ class SQFLiteDB extends DBWorker {
   Future<List<Filter>> getAll() async {
     Database db = await database;
     var values = await db.query(TBL_NAME);
-    print('db_getAll(): $values');
     return values.isNotEmpty ? Future.wait(values.map((m) => _fromMap(m)).toList()) : [];
   }
 
@@ -113,18 +116,17 @@ class SQFLiteDB extends DBWorker {
     IconData iconData = mapToIconData(iconMap);
     filter.icon = iconData;
 
+    // Reading of landmark information
     List<String> landmarkSplit = map[KEY_LANDMARKS].split(SEPARATOR);
     List<String> widthSplit = map[KEY_WIDTHS].split(SEPARATOR);
     List<String> heightSplit = map[KEY_HEIGHTS].split(SEPARATOR);
-    print('LandmarkSplit: $landmarkSplit -> $widthSplit -> $heightSplit');
-    if (landmarkSplit.isEmpty) return null;
+    if (landmarkSplit.isEmpty || widthSplit.isEmpty || heightSplit.isEmpty) return null;
 
     for (int i = 0; i < landmarkSplit.length; i++) {
       String landmarkString = landmarkSplit[i];
-      if (landmarkString.isEmpty) {
-        print('Brakeeeeeeeeeeee');
+      if (landmarkString.isEmpty)
         break;
-      }
+
       // String to Enum
       FaceLandmarkType landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);
 
@@ -136,7 +138,6 @@ class SQFLiteDB extends DBWorker {
 
       filter.landmarks[landmarkType] = LandmarkFilterInfo(filename, dartImage, width, height);
     }
-    print('Filter from DB: $filter');
     return filter;
   }
 

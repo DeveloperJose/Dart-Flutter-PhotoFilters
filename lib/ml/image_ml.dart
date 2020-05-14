@@ -11,8 +11,12 @@ import 'firebase_utils.dart';
 /// The different ways an ImageML can be loaded
 enum ImageMLType { LIVE_CAMERA_MEMORY, FILE, ASSET }
 
+/// The different states an ImageML goes through when being loaded
 enum ImageMLLoadState { START, LOADING_ASSET, LOADING_IMAGE, LOADING_IMAGE_INFO, PERFORMING_ML, CLEANING_UP, FINISHED }
 
+/// Image ML (Machine Learning) class
+/// Contains the information related to the machine learning aspects of an Image
+/// Wraps all the needed information for processing
 class ImageML {
   /// How this image needs to be loaded or was loaded
   ImageMLType loadType;
@@ -42,16 +46,21 @@ class ImageML {
   /// The size of the image, null if not loaded or loaded from memory
   Size get size => Size(width, height);
 
+  /// Constructs an ImageML
   ImageML(this.loadType, [this.filename]) {
     isLoaded = loadType == ImageMLType.LIVE_CAMERA_MEMORY;
   }
 
+  /// Loads this image and processes it based on the loadType
+  /// Streams the loading state it's currently at
   Stream<ImageMLLoadState> load() async* {
     if (loadType == ImageMLType.ASSET)
       yield* _loadAsset();
     else if (loadType == ImageMLType.FILE) yield* _loadFile();
   }
 
+  /// Loads this image from a file
+  /// Streams the loading state it's currently at
   Stream<ImageMLLoadState> _loadFile() async* {
     yield ImageMLLoadState.LOADING_IMAGE;
     this.flutterImage = getAppFlutterImage(filename);
@@ -67,6 +76,8 @@ class ImageML {
     yield ImageMLLoadState.FINISHED;
   }
 
+  /// Loads this image from an asset
+  /// Streams the loading state it's currently at
   Stream<ImageMLLoadState> _loadAsset() async* {
     // Save image temporarily into a file
     yield ImageMLLoadState.LOADING_ASSET;

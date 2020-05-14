@@ -9,6 +9,8 @@ import 'package:photofilters/ml/image_ml.dart';
 
 import 'filter_model.dart';
 
+/// A widget that overlays a filter on top of an image, mostly used for previews
+/// Can detect whether the image is from a file or live camera given a model and display the corresponding widget
 class FilterPreviewWidget extends StatefulWidget {
   final FilterModel filterModel;
 

@@ -1,22 +1,17 @@
 import 'package:feature_discovery/feature_discovery.dart';
-import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
 
+import 'filters/entry/filters_entry.dart';
 import 'filters/filter_model.dart';
 import 'filters/filters_dbworker.dart';
-import 'filters/entry/filters_entry.dart';
 import 'filters/filters_list.dart';
 import 'image_utils.dart';
 import 'ml/firebase_utils.dart';
 import 'ml/image_ml.dart';
 
 FilterModel mainFilterModel = FilterModel();
-
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -11,6 +11,7 @@ import 'package:path/path.dart';
 /// Application documents directory, initialized by main
 Directory mDocsDir;
 
+/// Clears all temporary files from the app if they exist
 void clearTemporaryFiles() {
   var tempFile = getAppFile('temp');
   if (tempFile.existsSync()) tempFile.deleteSync(recursive: true);
@@ -21,17 +22,21 @@ void clearTemporaryFiles() {
   });
 }
 
-// General File IO
+/// Converts a filename into a (working) internal valid filename
 String getInternalFilename(String filename) => join(mDocsDir.path, filename);
 
+/// Gets a file from the app's document directory
 File getAppFile(String filename) => File(getInternalFilename(filename));
 
+/// Gets an image from the app's document directory
 Image getAppFlutterImage(String filename) {
   File file = getAppFile(filename);
   if (!file.existsSync()) return null;
   return Image.memory(file.readAsBytesSync());
 }
 
+/// Converts an asset into a file and saves it into the app's document directory
+/// This is used for a hacky fix to load an asset into Firebase ML since the docs of readBytes are terrible
 Future<File> createAppFileFromAssetIfNotExists(String assetFilename) async {
   File file = getAppFile(assetFilename);
   if (!file.existsSync()) {
@@ -42,18 +47,20 @@ Future<File> createAppFileFromAssetIfNotExists(String assetFilename) async {
   return getAppFile(assetFilename);
 }
 
+/// Gets a dart:ui Image from the app's document directory
 Future<ui.Image> getAppDartImage(String filename) async {
   File file = getAppFile(filename);
   if (!file.existsSync()) return null;
   return await decodeImageFromList(file.readAsBytesSync());
 }
 
+/// Gets a Firebase ML ready image from the app's document directory
 FirebaseVisionImage getAppFirebaseImage(String filename) => FirebaseVisionImage.fromFile(getAppFile(filename));
 
-// Landmark IO
+/// Converts a FaceLandmarkType into a filename for IO operations
 String getLandmarkFilename(String filterName, FaceLandmarkType type) => ((filterName ?? '') + '-' + type.toString());
 
-/// Allows you to select if you want to take a picture with your camera or get it from your gallery
+/// Dialog that allows you to pick an image with your camera or from your gallery
 Future selectImage(BuildContext context, String filename) {
   String internalFilename = getInternalFilename(filename);
   double width = MediaQuery.of(context).size.width;
@@ -85,6 +92,7 @@ Future selectImage(BuildContext context, String filename) {
       });
 }
 
+/// Saves a given file with the given filename
 void _saveImage(File file, String filename) {
   if (file == null) return;
 

@@ -9,18 +9,8 @@ import 'package:scoped_model/scoped_model.dart';
 import '../filter.dart';
 import '../filter_model.dart';
 
-const double DEFAULT_WIDTH = 15;
-const double DEFAULT_HEIGHT = 15;
-
-/// Converts a FaceLandmarkType into a nice readable string
-String landmarkToNiceString(FaceLandmarkType type) {
-  if (type != null)
-    return type.toString().substring('FaceLandmarkType.'.length);
-  else
-    return '?';
-}
-
 class LandmarkEditPage extends StatefulWidget {
+  /// The key used by our parent widget to perform validation on this page
   final GlobalKey<FormBuilderState> _formKey;
 
   LandmarkEditPage(this._formKey);
@@ -30,22 +20,39 @@ class LandmarkEditPage extends StatefulWidget {
 }
 
 class LandmarkEditPageState extends State<LandmarkEditPage> {
+  /// The default filter width
+  static const double DEFAULT_WIDTH = 15;
+
+  /// The default filter height
+  static const double DEFAULT_HEIGHT = 15;
+
+  /// Key used for resetting width
   GlobalKey _widthKey = GlobalKey();
+
+  /// Key used for resetting height
   GlobalKey _heightKey = GlobalKey();
+
+  /// The currently selected landmark being edited
   FaceLandmarkType currentLandmarkBeingEdited;
+
+  /// Converts a FaceLandmarkType into a nice readable string
+  String landmarkToNiceString(FaceLandmarkType type) {
+    if (type != null)
+      return type.toString().substring('FaceLandmarkType.'.length);
+    else
+      return '?';
+  }
 
   @override
   Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-        return Scrollbar(
-            child: SingleChildScrollView(
-                child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10),
-          child: _buildForm(context, model),
-        )));
+        return Scrollbar(child: SingleChildScrollView(child: Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: _buildForm(context, model))));
       });
 
+  /// Builds the form that contains all the fields that can be edited
   Widget _buildForm(BuildContext context, FilterModel model) {
     var formChildren = [_buildLandmarkSelector(model)];
+
+    // If we have selected a landmark, we can display the extra information
     if (currentLandmarkBeingEdited != null) {
       formChildren.add(_buildImageEditor(context, model));
       formChildren.add(_buildWidthEditor(model));
@@ -55,6 +62,7 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
     return FormBuilder(key: widget._formKey, child: Column(children: formChildren));
   }
 
+  /// Builds the choice chip landmark selector
   Widget _buildLandmarkSelector(FilterModel model) {
     var landmarkOptions = FaceLandmarkType.values.map((landmarkType) {
       String landmarkText = landmarkToNiceString(landmarkType);
@@ -86,6 +94,7 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
     );
   }
 
+  /// Builds the landmark image editor
   Widget _buildImageEditor(BuildContext context, FilterModel model) {
     // Check if we have a temporary landmark image saved
     String landmarkFilename = getLandmarkFilename('temp', currentLandmarkBeingEdited);
@@ -118,9 +127,9 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
         ));
   }
 
+  /// Builds the landmark width editor
   Widget _buildWidthEditor(FilterModel model) {
     LandmarkFilterInfo filterInfo = model.landmarks[currentLandmarkBeingEdited];
-    print('Model Landmarks: ${model.landmarks}');
     return FormBuilderTouchSpin(
       key: _widthKey,
       attribute: 'width',
@@ -136,6 +145,7 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
     );
   }
 
+  /// Builds the landmark height editor
   Widget _buildHeightEditor(FilterModel model) {
     LandmarkFilterInfo filterInfo = model.landmarks[currentLandmarkBeingEdited];
     return FormBuilderTouchSpin(

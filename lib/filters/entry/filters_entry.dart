@@ -20,15 +20,24 @@ class FilterEntry extends StatefulWidget {
 }
 
 class FilterEntryState extends State<FilterEntry> {
+  /// Key used to keep track of the current wizard page and to navigate back and forth
   GlobalKey<PageSliderState> _sliderKey = GlobalKey();
+
+  /// How many steps are there in the entry wizard? (total)
   static const int TOTAL_WIZARD_STEPS = 2;
 
+  /// All keys used by the wizard for validation, one per step
   List<GlobalKey<FormBuilderState>> _wizardFormKeys = List.generate(TOTAL_WIZARD_STEPS, (index) => GlobalKey());
 
+  /// The key used for validation for the current wizard step
   GlobalKey<FormBuilderState> get currentKey => _wizardFormKeys[_sliderKey.currentState.currentPage];
 
+  /// Can we move backward in this wizard?
+  /// If not, we are at the beginning of the wizard
   bool get hasPrevious => _sliderKey?.currentState?.hasPrevious ?? false;
 
+  /// Can we move forward in this wizard?
+  /// If not, we have reached the end of the wizard
   bool get hasNext => _sliderKey?.currentState?.hasNext ?? false;
 
   @override
@@ -42,6 +51,7 @@ class FilterEntryState extends State<FilterEntry> {
             ]));
       });
 
+  /// Builds the preview widget
   Widget _buildPreview(BuildContext context, FilterModel model) => Stack(alignment: AlignmentDirectional.bottomEnd, children: [
         FilterPreviewWidget(filterModel: model),
         Positioned(
@@ -65,10 +75,12 @@ class FilterEntryState extends State<FilterEntry> {
         )
       ]);
 
+  /// Builds the entry wizard
   Widget buildWizard(BuildContext context, FilterModel model) {
     return PageSlider(key: _sliderKey, pages: [LandmarkEditPage(_wizardFormKeys[0]), InfoEditPage(_wizardFormKeys[1])]);
   }
 
+  /// Builds the navigation control widget
   Widget buildNavigationControls(BuildContext context, FilterModel model) {
     return Container(
         color: Theme.of(context).accentColor.withAlpha(75),
@@ -84,16 +96,19 @@ class FilterEntryState extends State<FilterEntry> {
         ]));
   }
 
+  /// Actions to take when the Cancel button is pressed
   void onCancelPressed(FilterModel model) {
     currentKey.currentState.save();
     cancelEntry(context, model);
   }
 
+  /// Actions to take when the Previous button is pressed
   void onPreviousPressed() async {
     if (!currentKey.currentState.validate()) return;
     setState(() => _sliderKey.currentState.previous());
   }
 
+  /// Actions to take when the Next/Finish & Save button is pressed
   void onNextPressed(FilterModel model) async {
     if (!currentKey.currentState.validate()) return;
 
@@ -105,6 +120,7 @@ class FilterEntryState extends State<FilterEntry> {
     }
   }
 
+  /// Clears this entry and returns to the list of filters
   void returnToFilterList(BuildContext context, FilterModel model) {
     clearTemporaryFiles();
 
@@ -122,24 +138,22 @@ class FilterEntryState extends State<FilterEntry> {
     model.setStackIndex(0);
   }
 
+  /// Cancels this entry, closes and returns to list of filters
   void cancelEntry(BuildContext context, FilterModel model) {
     returnToFilterList(context, model);
   }
 
+  /// Saves this entry, closes and returns to list of filters
+  /// Stores or updates entry into DB
+  /// Makes landmark files permanent
   void saveEntry(BuildContext context, FilterModel model) async {
-    // Save files and remove temps
-    int count = 0;
+    // Rename all temporary files using permanent filenames
     FaceLandmarkType.values.forEach((landmarkType) {
       var tempFile = getAppFile(getLandmarkFilename('temp', landmarkType));
       var newPath = getInternalFilename(getLandmarkFilename(model.entityBeingEdited.name, landmarkType));
-      if (tempFile.existsSync()) {
-        print('The temp file: $tempFile wants to be moved to $newPath');
+      if (tempFile.existsSync())
         tempFile.renameSync(newPath);
-        count++;
-      }
     });
-
-    print('Saved $count landmarks from the entity being edited under the name ${model.entityBeingEdited.name}');
 
     // Update entity
     model.entityBeingEdited.landmarks = model.landmarks;
