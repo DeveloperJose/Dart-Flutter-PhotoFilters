@@ -39,7 +39,7 @@ class FaceOverlayPainter extends CustomPainter {
       }
 
       // Place the filters onto the landmarks (if possible)
-      model.landmarks?.forEach((FaceLandmarkType landmarkType, FilterInfo filter) {
+      model.landmarks?.forEach((FaceLandmarkType landmarkType, LandmarkFilterInfo filter) {
         FaceLandmark faceLandmark = face.getLandmark(landmarkType);
         if (faceLandmark == null || filter.dartImage == null) return;
 

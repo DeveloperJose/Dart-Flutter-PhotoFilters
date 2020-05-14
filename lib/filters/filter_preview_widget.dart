@@ -56,7 +56,6 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
         key: cameraMLVisionKey,
         detector: faceDetector.processImage,
         cameraLensDirection: cameraLensDirection,
-        resolution: ResolutionPreset.max,
         overlayBuilder: (context) {
           return CustomPaint(painter: FaceOverlayPainter(widget.filterModel, cameraMLVisionKey.currentState.cameraValue.previewSize.flipped));
         },
@@ -109,7 +108,7 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
   /// Builds a stack containing the current progress text and an optional background widget
   Stack _buildProgressStack(String progressText, [Widget backgroundWidget]) {
     if (backgroundWidget == null) backgroundWidget = Container();
-    return Stack(alignment: AlignmentDirectional.center, children: [backgroundWidget, Text(progressText), Positioned(child: CircularProgressIndicator())]);
+    return Stack(alignment: AlignmentDirectional.center, children: [backgroundWidget, Text(progressText, style: TextStyle(backgroundColor: Colors.deepPurple, color: Colors.white)), Positioned(child: CircularProgressIndicator())]);
   }
 
   /// Creates the preview widget from the current StreamBuilder's stream state

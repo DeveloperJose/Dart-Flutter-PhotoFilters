@@ -36,10 +36,12 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
 
   @override
   Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
-        return Padding(
+        return Scrollbar(
+            child: SingleChildScrollView(
+                child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10),
           child: _buildForm(context, model),
-        );
+        )));
       });
 
   Widget _buildForm(BuildContext context, FilterModel model) {
@@ -58,15 +60,21 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
       String landmarkText = landmarkToNiceString(landmarkType);
 
       bool modifiedBefore = model.landmarks[landmarkType] != null;
-      if (modifiedBefore)
-        landmarkText += '*';
+      if (modifiedBefore) landmarkText += '*';
 
       return FormBuilderFieldOption(value: landmarkType, child: Text(landmarkText));
     }).toList();
+
     return FormBuilderChoiceChip(
       attribute: 'landmark',
       decoration: InputDecoration(labelText: 'Select a facial landmark to edit'),
       options: landmarkOptions,
+      validators: [
+        (landmarkType) {
+          if (model.landmarks.isEmpty) return 'Please edit at least one facial feature';
+          return null;
+        }
+      ],
       onChanged: (landmarkType) => setState(() {
         // Update landmark
         currentLandmarkBeingEdited = landmarkType;
@@ -74,6 +82,7 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
         _widthKey = GlobalKey();
         _heightKey = GlobalKey();
       }),
+      onSaved: (value) => setState(() => currentLandmarkBeingEdited = null),
     );
   }
 
@@ -93,15 +102,15 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
             Container(),
             (landmarkImage != null) ? Container(width: 75, height: 75, child: landmarkImage) : Text('No image set yet', style: TextStyle(backgroundColor: Theme.of(context).primaryColor.withAlpha(50))),
             Container(
-              alignment: Alignment.centerRight,
               child: GestureDetector(
                 child: Container(width: 50, height: 50, color: Theme.of(context).primaryColor.withAlpha(50), child: Icon(Icons.camera_enhance)),
                 onTap: () async {
                   await selectImage(context, landmarkFilename);
-                  FilterInfo filterInfo = await FilterInfo.fromFilename(landmarkFilename);
+                  LandmarkFilterInfo filterInfo = await LandmarkFilterInfo.fromFilename(landmarkFilename);
                   filterInfo.width = DEFAULT_WIDTH;
                   filterInfo.height = DEFAULT_HEIGHT;
                   model.addLandmarkFilter(currentLandmarkBeingEdited, filterInfo);
+                  widget._formKey.currentState.validate();
                 },
               ),
             ),
@@ -110,7 +119,8 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
   }
 
   Widget _buildWidthEditor(FilterModel model) {
-    FilterInfo filterInfo = model.landmarks[currentLandmarkBeingEdited];
+    LandmarkFilterInfo filterInfo = model.landmarks[currentLandmarkBeingEdited];
+    print('Model Landmarks: ${model.landmarks}');
     return FormBuilderTouchSpin(
       key: _widthKey,
       attribute: 'width',
@@ -127,7 +137,7 @@ class LandmarkEditPageState extends State<LandmarkEditPage> {
   }
 
   Widget _buildHeightEditor(FilterModel model) {
-    FilterInfo filterInfo = model.landmarks[currentLandmarkBeingEdited];
+    LandmarkFilterInfo filterInfo = model.landmarks[currentLandmarkBeingEdited];
     return FormBuilderTouchSpin(
       key: _heightKey,
       attribute: 'height',

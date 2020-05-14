@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:feature_discovery/feature_discovery.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,21 +23,14 @@ class FilterList extends StatefulWidget {
 }
 
 class FilterListState extends State<FilterList> {
-  static const double ICON_PADDING = 30.0;
-
-  static Paint listItemTextPaint = Paint()
-    ..strokeWidth = 20
-    ..color = Colors.deepPurple
-    ..style = PaintingStyle.stroke;
-
+  static const double ICON_PADDING = 50.0;
   int currentPreviewedFilterIndex = 0;
 
   @override
   void initState() {
     SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
-      FeatureDiscovery.discoverFeatures(context, ['filter_list', 'flip_camera']);
+      FeatureDiscovery.discoverFeatures(context, {'filter_list', 'flip_camera'});
     });
-
     super.initState();
   }
 
@@ -61,7 +56,7 @@ class FilterListState extends State<FilterList> {
               ? Container(alignment: Alignment.bottomCenter, child: Container(width: double.maxFinite, color: Colors.grey.shade200, child: Text('Filters unavailable until preview is loaded', textAlign: TextAlign.center)))
               : DescribedFeatureOverlay(
                   featureId: 'filter_list',
-                  tapTarget: _buildListItem(model, Filter(-1, 'Filter Name')),
+                  tapTarget: _buildListItem(model, Filter(-1, 'Filter Name', Icons.hourglass_empty)),
                   title: Text('Filter List'),
                   description: Text('Swipe left and right to move between your filters'),
                   child: Swiper(
@@ -83,24 +78,31 @@ class FilterListState extends State<FilterList> {
                   )));
 
   Widget _buildListItem(FilterModel model, Filter item) => LayoutBuilder(builder: (context, constraint) {
-        double width = constraint.biggest.width > 0 ? constraint.biggest.width - ICON_PADDING : 1;
+        double height = math.max(constraint.biggest.height - ICON_PADDING, 1);
         return Stack(alignment: AlignmentDirectional.center, children: [
+          ClipOval(child: Container(color: Colors.tealAccent, child: Icon(item.icon ?? Icons.device_unknown, size: height))),
           _buildListItemText(model, item),
-          Icon(Icons.not_listed_location, size: width),
         ]);
       });
 
-  Widget _buildListItemText(FilterModel model, Filter item) => CircularText(backgroundPaint: listItemTextPaint, children: [
-        TextItem(
-          startAngle: -90,
-          startAngleAlignment: StartAngleAlignment.center,
-          space: 14,
-          text: Text(item.name.toUpperCase(), style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-        )
-      ]);
+  Widget _buildListItemText(FilterModel model, Filter item) => CircularText(
+          backgroundPaint: Paint()
+            ..strokeWidth = 20
+            ..color = Colors.teal
+            ..style = PaintingStyle.stroke,
+          children: [
+            TextItem(
+              startAngle: -90,
+              startAngleAlignment: StartAngleAlignment.center,
+              space: 14,
+              text: Text(item?.name?.toUpperCase() ?? 'ERR: INVALID ITEM NAME', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+            )
+          ]);
 
   Widget buildFloatingActionButton(BuildContext context, FilterModel model) {
-    var currentPreviewedFilter = model.entityList[currentPreviewedFilterIndex];
+    var currentPreviewedFilter;
+    if (currentPreviewedFilterIndex < model.entityList.length) currentPreviewedFilter = model.entityList[currentPreviewedFilterIndex];
+
     List<SpeedDialChild> list = [];
     if (model.imageML.loadType == ImageMLType.FILE) {
       var openCameraIcon = Icon(Icons.face);
@@ -129,7 +131,7 @@ class FilterListState extends State<FilterList> {
       var editFilterTitle = Text('Edit An Existing Filter');
       var editFilterDescription = Text('Edit the currently selected filter using the creation wizard again');
       var editFilterChild = DescribedFeatureOverlay(featureId: 'edit_filter', child: editFilterIcon, tapTarget: editFilterIcon, title: editFilterTitle, description: editFilterDescription);
-      list.add(SpeedDialChild(child: editFilterChild, label: 'Edit "${currentPreviewedFilter?.name}" filter'));
+      list.add(SpeedDialChild(child: editFilterChild, label: 'Edit "${currentPreviewedFilter?.name}" filter', onTap: () => editFilter(model, model.entityList[currentPreviewedFilterIndex])));
     }
 
     var addFilterIcon = Icon(Icons.library_add);
@@ -160,14 +162,21 @@ class FilterListState extends State<FilterList> {
     if (getAppFile('temp').existsSync()) {
       model.imageML = ImageML(ImageMLType.FILE, 'temp');
     }
+
+    // Clear widget state
+    setState(() => currentPreviewedFilterIndex = 0);
   }
 
   void editFilter(FilterModel model, Filter filter) async {
+    // Clear widget state
+    setState(() => currentPreviewedFilterIndex = 0);
+
     if (filter.id != null)
       model.entityBeingEdited = await DBWorker.db.get(filter.id);
     else
       model.entityBeingEdited = filter;
 
+    print('Setting model to filter: ${filter.landmarks}');
     model.landmarks = filter.landmarks;
     model.imageMLEdit = model.imageML;
     model.imageML = ImageML(ImageMLType.ASSET, 'assets/preview.jpg');
@@ -187,6 +196,9 @@ class FilterListState extends State<FilterList> {
     // Reload DB and refresh filter list
     model.loadData(DBWorker.db);
     model.landmarks.clear();
+
+    // Clear widget state
+    setState(() => currentPreviewedFilterIndex = 0);
   }
 
   Future deleteFilterDialog(BuildContext context, FilterModel model, Filter filter) async {

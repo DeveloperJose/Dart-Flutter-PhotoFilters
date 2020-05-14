@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../image_utils.dart';
 
-class FilterInfo {
+class LandmarkFilterInfo {
   String imageFilename;
   ui.Image dartImage;
 
@@ -18,26 +18,34 @@ class FilterInfo {
 
   Size get size => Size(width, height);
 
-  FilterInfo(this.imageFilename, this.dartImage, this.width, this.height);
+  LandmarkFilterInfo(this.imageFilename, this.dartImage, this.width, this.height);
 
-  FilterInfo.fromDartImage(this.imageFilename, this.dartImage) {
+  LandmarkFilterInfo.fromDartImage(this.imageFilename, this.dartImage) {
     width = dartImage.width.toDouble();
     height = dartImage.height.toDouble();
   }
 
-  static Future<FilterInfo> fromFilename(String filename) async {
+  static Future<LandmarkFilterInfo> fromFilename(String filename) async {
     ui.Image dartImage = await getAppDartImage(filename);
     if (dartImage == null) return null;
-    return FilterInfo.fromDartImage(filename, dartImage);
+    return LandmarkFilterInfo.fromDartImage(filename, dartImage);
   }
 }
 
 class Filter {
+  /// The database ID for this filter
   int id;
-  String name;
-  Map<FaceLandmarkType, FilterInfo> landmarks = {};
 
-  Filter([this.id, this.name]);
+  /// The name of this filter
+  String name;
+
+  /// The icon of this filter
+  IconData icon;
+
+  /// The map containing the image filters applied to Facial Landmarks
+  Map<FaceLandmarkType, LandmarkFilterInfo> landmarks = {};
+
+  Filter([this.id, this.name, this.icon]);
 
   @override
   String toString() {

@@ -2,6 +2,7 @@ import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:page_slider/page_slider.dart';
 import 'package:photofilters/filters/entry/info_edit_page.dart';
 import 'package:photofilters/filters/entry/landmark_edit_page.dart';
 import 'package:photofilters/filters/filter_model.dart';
@@ -19,23 +20,23 @@ class FilterEntry extends StatefulWidget {
 }
 
 class FilterEntryState extends State<FilterEntry> {
+  GlobalKey<PageSliderState> _sliderKey = GlobalKey();
   static const int TOTAL_WIZARD_STEPS = 2;
 
   List<GlobalKey<FormBuilderState>> _wizardFormKeys = List.generate(TOTAL_WIZARD_STEPS, (index) => GlobalKey());
-  int _currentWizardStep = 0;
 
-  bool get isFirstWizardStep => (_currentWizardStep == 0);
+  GlobalKey<FormBuilderState> get currentKey => _wizardFormKeys[_sliderKey.currentState.currentPage];
 
-  bool get isLastWizardStep => (_currentWizardStep == TOTAL_WIZARD_STEPS - 1);
+  bool get hasPrevious => _sliderKey?.currentState?.hasPrevious ?? false;
 
-  GlobalKey<FormBuilderState> get currentKey => _wizardFormKeys[_currentWizardStep];
+  bool get hasNext => _sliderKey?.currentState?.hasNext ?? false;
 
   @override
   Widget build(BuildContext context) => ScopedModelDescendant<FilterModel>(builder: (BuildContext context, Widget child, FilterModel model) {
         return Scaffold(
             resizeToAvoidBottomPadding: false,
             body: Column(children: [
-              Expanded(child: Scrollbar(child: SingleChildScrollView(child: IndexedStack(index: _currentWizardStep, children: buildWizardChildren(context, model))))),
+              Expanded(child: buildWizard(context, model)),
               buildNavigationControls(context, model),
               Container(constraints: BoxConstraints(maxHeight: 400), child: _buildPreview(context, model)),
             ]));
@@ -64,8 +65,8 @@ class FilterEntryState extends State<FilterEntry> {
         )
       ]);
 
-  List<Widget> buildWizardChildren(BuildContext context, FilterModel model) {
-    return [LandmarkEditPage(_wizardFormKeys[0]), InfoEditPage(_wizardFormKeys[1])];
+  Widget buildWizard(BuildContext context, FilterModel model) {
+    return PageSlider(key: _sliderKey, pages: [LandmarkEditPage(_wizardFormKeys[0]), InfoEditPage(_wizardFormKeys[1])]);
   }
 
   Widget buildNavigationControls(BuildContext context, FilterModel model) {
@@ -73,27 +74,35 @@ class FilterEntryState extends State<FilterEntry> {
         color: Theme.of(context).accentColor.withAlpha(75),
         padding: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
         child: Row(children: [
-          FlatButton(child: Text('Cancel'), onPressed: () => cancelEntry(context, model)),
+          FlatButton(child: Text('Cancel'), onPressed: () => onCancelPressed(model)),
           Spacer(),
-          FlatButton(child: Text('Previous'), onPressed: isFirstWizardStep ? null : onPreviousPressed),
+          FlatButton(child: Text('Previous'), onPressed: (hasPrevious) ? onPreviousPressed : null),
           RaisedButton(
-            child: Text(isLastWizardStep ? 'Save' : 'Next'),
+            child: Text(hasNext ? 'Next' : 'Finish & Save'),
             onPressed: () => onNextPressed(model),
           ),
         ]));
   }
 
+  void onCancelPressed(FilterModel model) {
+    currentKey.currentState.save();
+    cancelEntry(context, model);
+  }
+
   void onPreviousPressed() async {
     if (!currentKey.currentState.validate()) return;
-    setState(() => _currentWizardStep--);
+    setState(() => _sliderKey.currentState.previous());
   }
 
   void onNextPressed(FilterModel model) async {
     if (!currentKey.currentState.validate()) return;
-    if (isLastWizardStep)
+
+    if (hasNext) {
+      setState(() => _sliderKey.currentState.next());
+    } else {
+      currentKey.currentState.save();
       saveEntry(context, model);
-    else
-      setState(() => _currentWizardStep++);
+    }
   }
 
   void returnToFilterList(BuildContext context, FilterModel model) {
@@ -103,16 +112,17 @@ class FilterEntryState extends State<FilterEntry> {
     model.imageML = model.imageMLEdit;
     model.imageMLEdit = null;
 
+    // Clear state
+    setState(() {
+      _sliderKey = GlobalKey();
+      _wizardFormKeys = List.generate(TOTAL_WIZARD_STEPS, (index) => GlobalKey());
+    });
+
     FocusScope.of(context).requestFocus(FocusNode());
     model.setStackIndex(0);
   }
 
   void cancelEntry(BuildContext context, FilterModel model) {
-    // Clear state
-    setState(() {
-      _currentWizardStep = 0;
-      _wizardFormKeys = List.generate(TOTAL_WIZARD_STEPS, (index) => GlobalKey());
-    });
     returnToFilterList(context, model);
   }
 
@@ -123,6 +133,7 @@ class FilterEntryState extends State<FilterEntry> {
       var tempFile = getAppFile(getLandmarkFilename('temp', landmarkType));
       var newPath = getInternalFilename(getLandmarkFilename(model.entityBeingEdited.name, landmarkType));
       if (tempFile.existsSync()) {
+        print('The temp file: $tempFile wants to be moved to $newPath');
         tempFile.renameSync(newPath);
         count++;
       }

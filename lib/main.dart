@@ -2,6 +2,7 @@ import 'package:feature_discovery/feature_discovery.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_camera_ml_vision/flutter_camera_ml_vision.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:scoped_model/scoped_model.dart';
 
@@ -47,9 +48,9 @@ class MyAppState extends State<MyApp> {
         child: MaterialApp(
             debugShowCheckedModeBanner: true,
             home: Scaffold(
+              resizeToAvoidBottomPadding: false,
               appBar: AppBar(title: Text('PhotoFilters by Jose G. Perez')),
               body: buildScopedModel(),
-              resizeToAvoidBottomPadding: false,
             )));
   }
 
