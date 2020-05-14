@@ -68,8 +68,7 @@ class FilterPreviewWidgetState extends State<FilterPreviewWidget> {
             if (permResult.isGranted) {
               await ImageGallerySaver.saveImage(imageBytes);
               Scaffold.of(context).showSnackBar(SnackBar(content: Text('Image saved to gallery!'), duration: Duration(seconds: 5), backgroundColor: Colors.green));
-            }
-            else {
+            } else {
               Scaffold.of(context).showSnackBar(SnackBar(content: Text('Could not save image due to denied permissions'), duration: Duration(seconds: 5), backgroundColor: Colors.red));
             }
           }),

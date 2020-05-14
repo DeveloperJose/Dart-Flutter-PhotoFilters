@@ -9,11 +9,13 @@ import '../image_utils.dart';
 class LandmarkFilterInfo {
   /// Filename for the landmark filter image
   String imageFilename;
+
   /// dart:ui Image used for rendering and resizing
   ui.Image dartImage;
 
   /// The width of the filter, given by the user during creation
   double width;
+
   /// The height of the filter, given by the user during creation
   double height;
 

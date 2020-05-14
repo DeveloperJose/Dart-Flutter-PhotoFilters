@@ -124,8 +124,7 @@ class SQFLiteDB extends DBWorker {
 
     for (int i = 0; i < landmarkSplit.length; i++) {
       String landmarkString = landmarkSplit[i];
-      if (landmarkString.isEmpty)
-        break;
+      if (landmarkString.isEmpty) break;
 
       // String to Enum
       FaceLandmarkType landmarkType = FaceLandmarkType.values.singleWhere((e) => e.toString() == landmarkSplit[i]);

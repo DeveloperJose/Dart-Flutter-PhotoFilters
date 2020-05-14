@@ -151,8 +151,7 @@ class FilterEntryState extends State<FilterEntry> {
     FaceLandmarkType.values.forEach((landmarkType) {
       var tempFile = getAppFile(getLandmarkFilename('temp', landmarkType));
       var newPath = getInternalFilename(getLandmarkFilename(model.entityBeingEdited.name, landmarkType));
-      if (tempFile.existsSync())
-        tempFile.renameSync(newPath);
+      if (tempFile.existsSync()) tempFile.renameSync(newPath);
     });
 
     // Update entity
