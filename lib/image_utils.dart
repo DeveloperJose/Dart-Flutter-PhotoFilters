@@ -61,6 +61,7 @@ Future selectImage(BuildContext context, String filename) {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+          contentPadding: EdgeInsets.all(10),
           content: SingleChildScrollView(
             child: ListBody(children: [
               GestureDetector(
