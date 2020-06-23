@@ -7,6 +7,10 @@ I wanted to add more advanced placement options using contours, but as it was my
 
 Think of this as a more advanced Firebase ML face detection demo.
 
+## Detailed Report
+There is a [detailed report](/report.docx) talking about this project that I wrote for my class talking about extra details involved in making this app that were required by the professor.
+It also contains more screenshots and more detailed explanations about them.
+
 ## Sample screenshots
 ![Screenshot of image loading](/loading.png)
 
@@ -15,7 +19,3 @@ Think of this as a more advanced Firebase ML face detection demo.
 ![Screenshot of filter list containing saved filters](/filter_list.png)
 
 ![Screenshot of floating action button using speed-dial style](/speed_dial.png)
-
-## Detailed Report
-There is a [detailed report](/report.docx) talking about this project that I wrote for my class talking about extra details involved in making this app that were required by the professor.
-It also contains more screenshots and more detailed explanations about them.
