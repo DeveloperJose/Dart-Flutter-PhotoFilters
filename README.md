@@ -1,16 +1,21 @@
-# photofilters
+# Flutter PhotoFilters
+A flutter application that mimics Snapchat's lenses/filters using Firebase ML for face detection.
 
-A flutter application that mimics Snapchat&#x27;s lenses&#x2F;filters using Firebase ML for face detection
+It is very basic, and is only able to place images on top of [face landmarks](https://pub.dev/documentation/firebase_ml_vision/latest/firebase_ml_vision/FaceLandmarkType-class.html) defined by Firebase.
 
-## Getting Started
+I wanted to add more advanced placement options using contours, but as it was my final project for a class I did not have enough time to implement it.
 
-This project is a starting point for a Flutter application.
+Think of this as a more advanced Firebase ML face detection demo.
 
-A few resources to get you started if this is your first Flutter project:
+## Sample screenshots
+![Screenshot of image loading](/loading.png)
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+![Screenshot of filter editing](/editing.png)
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![Screenshot of filter list containing saved filters](/filter_list.png)
+
+![Screenshot of floating action button using speed-dial style](/speed_dial.png)
+
+## Detailed Report
+There is a [detailed report](/report.docx) talking about this project that I wrote for my class talking about extra details involved in making this app that were required by the professor.
+It also contains more screenshots and more detailed explanations about them.
